@@ -1,0 +1,94 @@
+{
+  "domains": [
+    {
+      "name": "Articulation",
+      "long_term_goals": [
+        {
+          "id": "ltg-artic-r",
+          "label": "Produce /r/ accurately across word positions in conversation",
+          "short_term_goals": [
+            {
+              "id": "stg-r-initial",
+              "label": "Produce initial /r/ at the word level",
+              "targets": [
+                { "id": "tgt-r-cvc", "label": "Initial /r/ in CVC words" },
+                { "id": "tgt-r-blends", "label": "Initial /r/ blends (br, cr, gr)" }
+              ]
+            },
+            {
+              "id": "stg-r-medial",
+              "label": "Produce medial/final /r/ at the word level",
+              "targets": [
+                { "id": "tgt-r-vocalic", "label": "Vocalic /r/ (er, ar, or)" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ltg-artic-s",
+          "label": "Produce /s/ and /s/-blends accurately at the sentence level",
+          "short_term_goals": [
+            {
+              "id": "stg-s-word",
+              "label": "Produce /s/ at the word level",
+              "targets": [
+                { "id": "tgt-s-initial", "label": "Initial /s/ in words" },
+                { "id": "tgt-s-blends", "label": "/s/ blends (st, sp, sn)" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fluency",
+      "long_term_goals": [
+        {
+          "id": "ltg-fluency-strategies",
+          "label": "Use fluency-shaping strategies to reduce disfluencies in conversation",
+          "short_term_goals": [
+            {
+              "id": "stg-easy-onset",
+              "label": "Apply easy onset at the phrase level",
+              "targets": [
+                { "id": "tgt-easy-onset", "label": "Easy onset in 3-4 word phrases" }
+              ]
+            },
+            {
+              "id": "stg-light-contact",
+              "label": "Apply light articulatory contact in structured tasks",
+              "targets": [
+                { "id": "tgt-light-contact", "label": "Light contact in reading aloud" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Language",
+      "long_term_goals": [
+        {
+          "id": "ltg-expressive",
+          "label": "Improve expressive language for grammatical accuracy",
+          "short_term_goals": [
+            {
+              "id": "stg-past-tense",
+              "label": "Use regular past-tense verbs in sentences",
+              "targets": [
+                { "id": "tgt-past-tense", "label": "Regular past-tense -ed in sentences" }
+              ]
+            },
+            {
+              "id": "stg-pronouns",
+              "label": "Use subjective pronouns accurately",
+              "targets": [
+                { "id": "tgt-pronouns", "label": "Subjective pronouns (he/she/they)" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

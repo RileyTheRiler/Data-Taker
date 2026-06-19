@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Data Taker — Start Session{% endblock %}
+
+{% block content %}
+<header class="topbar">
+  <h1>Data Taker</h1>
+  <p class="subtitle">SLP trial-by-trial data collection &middot; practice tool</p>
+</header>
+
+<main class="setup">
+  <section class="card">
+    <h2>1. Choose a client</h2>
+    <p class="hint">Anonymized labels only — never enter a real name or any identifying information.</p>
+    <select id="client-select" class="field"></select>
+    <div class="inline-add">
+      <input id="new-client" class="field" type="text" placeholder="New label, e.g. Client C" autocomplete="off">
+      <button id="add-client" class="btn-secondary" type="button">Add</button>
+    </div>
+    <p id="client-error" class="error" role="alert"></p>
+  </section>
+
+  <section class="card">
+    <h2>2. Select today's targets</h2>
+    <p class="hint">Tap targets to add them to the session's swipeable carousel.</p>
+    <div id="goal-tree" class="goal-tree"></div>
+  </section>
+
+  <section class="card start-card">
+    <h2>3. Start</h2>
+    <p id="selection-summary" class="hint">No targets selected yet.</p>
+    <button id="start-session" class="btn-primary" type="button" disabled>Start Session</button>
+    <p id="start-error" class="error" role="alert"></p>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/setup.js') }}"></script>
+{% endblock %}
