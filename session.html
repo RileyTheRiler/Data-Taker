@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <title>Data Taker — Session</title>
 <link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="/static/css/session-summary.css">
 </head>
 <body>
 <div class="app">
@@ -101,12 +102,42 @@
   <div id="ended-banner" class="ended-banner hidden">
     <p>Session ended.</p>
     <p>Total duration: <strong id="final-duration">—</strong></p>
-    <a id="review-session" class="btn-secondary ended-review-link" href="/">Review &amp; draft Objective</a>
-    <a class="btn-primary" href="/">New Session</a>
+
+    <section class="session-summary-panel hidden" data-session-summary aria-labelledby="ended-summary-title">
+      <h2 id="ended-summary-title" class="summary-heading">Session summary</h2>
+      <div class="summary-metrics">
+        <div class="summary-metric"><strong data-summary-client>—</strong><span>Client</span></div>
+        <div class="summary-metric"><strong data-summary-duration>—</strong><span>Duration</span></div>
+        <div class="summary-metric"><strong data-summary-overall>—</strong><span>Overall accuracy</span></div>
+        <div class="summary-metric"><strong data-summary-trials>0</strong><span>Total trials</span></div>
+      </div>
+
+      <div class="summary-section">
+        <h3 class="summary-subheading">Target performance</h3>
+        <div data-summary-target-chart></div>
+      </div>
+
+      <div class="summary-section">
+        <h3 class="summary-subheading">Client progress over time</h3>
+        <p class="hint"><span data-summary-session-count>0</span> ended sessions for this client. Overall accuracy is graphed by session.</p>
+        <div data-summary-progress-chart></div>
+      </div>
+
+      <div class="summary-section">
+        <h3 class="summary-subheading">Current target trends</h3>
+        <div class="target-trends" data-summary-target-trends></div>
+      </div>
+    </section>
+
+    <div class="ended-summary-actions">
+      <a id="review-session" class="btn-secondary ended-review-link" href="/">Review &amp; draft Objective</a>
+      <a class="btn-primary" href="/">New Session</a>
+    </div>
   </div>
 </div>
 </div>
 <script src="/static/js/storage.js"></script>
 <script src="/static/js/app.js"></script>
+<script src="/static/js/session-summary.js"></script>
 </body>
 </html>
