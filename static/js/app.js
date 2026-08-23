@@ -272,6 +272,8 @@ function showEnded() {
     document.getElementById("final-duration").textContent =
       formatDuration(state.duration_seconds);
   }
+  document.getElementById("review-session").href =
+    "/review.html?id=" + encodeURIComponent(sessionId);
   if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
 }
 

@@ -127,3 +127,32 @@ test("rejects target changes after a session ends", () => {
   assert.throws(() => DataTaker.addSessionTarget(session.id, "tgt-r-blends"), /ended/);
   assert.throws(() => DataTaker.renameSessionTarget(session.id, "tgt-r-cvc", "Changed"), /ended/);
 });
+
+test("drafts an Objective summary from ended-session accuracy and cueing", () => {
+  const { DataTaker } = loadDataTaker();
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc", "tgt-r-blends"]);
+  DataTaker.addDatapoint(session.id, "tgt-r-cvc", "+", []);
+  DataTaker.addDatapoint(session.id, "tgt-r-cvc", "-", ["Min", "Visual"]);
+  DataTaker.addDatapoint(session.id, "tgt-r-blends", "+", ["Visual"]);
+  DataTaker.endSession(session.id);
+
+  const draft = DataTaker.getObjectiveDraft(session.id);
+
+  assert.match(draft, /data were collected across 2 targets/);
+  assert.match(draft, /2 of 3 opportunities \(67%\)/);
+  assert.match(draft, /Initial \/r\/ in CVC words/);
+  assert.match(draft, /1 of 2 opportunities \(50%\)/);
+  assert.match(draft, /independent in 1 of 2 opportunities \(50%\)/);
+  assert.match(draft, /Min on 1 opportunity/);
+  assert.match(draft, /Visual on 1 opportunity/);
+  assert.match(draft, /Initial \/r\/ blends/);
+  assert.match(draft, /Visual on 1 opportunity/);
+  assert.match(draft, /Add the session activity or materials/);
+});
+
+test("requires an ended session before drafting an Objective summary", () => {
+  const { DataTaker } = loadDataTaker();
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+
+  assert.throws(() => DataTaker.getObjectiveDraft(session.id), /End the session/);
+});

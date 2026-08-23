@@ -138,6 +138,12 @@ function loadPastSessions() {
       targets.appendChild(row);
     });
     item.appendChild(targets);
+
+    const reviewLink = document.createElement("a");
+    reviewLink.className = "history-review-link";
+    reviewLink.href = "/review.html?id=" + encodeURIComponent(session.id);
+    reviewLink.textContent = "Review session & draft Objective";
+    item.appendChild(reviewLink);
     list.appendChild(item);
   });
 }

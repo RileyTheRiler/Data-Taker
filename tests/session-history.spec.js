@@ -131,3 +131,40 @@ test("adds and renames a target during a session without losing its trial", asyn
   expect(session.datapoints[0].target_id).toBe("tgt-r-cvc");
   expect(session.datapoints[1].target_id).toBe("tgt-r-blends");
 });
+
+test("reviews an ended session and exports the edited Objective draft", async ({ page }) => {
+  const item = page.locator(".history-item");
+  await item.locator("summary").click();
+  await expect(item.locator(".history-review-link")).toBeVisible();
+  await item.locator(".history-review-link").click();
+
+  await expect(page).toHaveURL(/\/review\.html\?id=session-a-new$/);
+  await expect(page.locator("#review-duration")).toHaveText("00:30:05");
+  await expect(page.locator("#review-accuracy")).toHaveText("67% · 2/3");
+  await expect(page.locator("#objective-draft")).toHaveValue(/2 of 3 opportunities \(67%\)/);
+  await expect(page.locator("#objective-draft")).toHaveValue(/Min on 1 opportunity/);
+  await expect(page.locator("#objective-draft")).toHaveValue(/Visual on 1 opportunity/);
+  await expect(page.locator(".objective-warning")).toContainText("Verify every detail");
+
+  const editedDraft = "Edited Objective draft for export.";
+  await page.locator("#objective-draft").fill(editedDraft);
+  const downloadPromise = page.waitForEvent("download");
+  await page.locator("#download-objective").click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("data-taker-objective-2026-08-23.txt");
+  await expect(page.locator("#objective-status")).toHaveText("Text draft downloaded.");
+
+  await page.evaluate(() => {
+    window.__printCalled = false;
+    window.print = () => { window.__printCalled = true; };
+  });
+  await page.locator("#print-objective").click();
+  expect(await page.evaluate(() => window.__printCalled)).toBe(true);
+  await expect(page.locator("#objective-print-body")).toHaveText(editedDraft);
+
+  const overflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+  }));
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+});

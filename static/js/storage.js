@@ -423,6 +423,88 @@ const DataTaker = (function () {
       .sort((a, b) => new Date(b.end_time).getTime() - new Date(a.end_time).getTime());
   }
 
+  function formatDurationWords(totalSeconds) {
+    const seconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const parts = [];
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    if (hours) { parts.push(hours + " hour" + (hours === 1 ? "" : "s")); }
+    if (minutes) { parts.push(minutes + " minute" + (minutes === 1 ? "" : "s")); }
+    if (remainingSeconds || !parts.length) {
+      parts.push(remainingSeconds + " second" + (remainingSeconds === 1 ? "" : "s"));
+    }
+    if (parts.length === 1) { return parts[0]; }
+    return parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
+  }
+
+  function opportunityText(count) {
+    return count + " opportunit" + (count === 1 ? "y" : "ies");
+  }
+
+  function cueSummary(datapoints) {
+    const counts = new Map();
+    let independent = 0;
+    datapoints.forEach((datapoint) => {
+      const prompts = Array.from(new Set(datapoint.prompt_levels || []));
+      if (!prompts.length) { independent += 1; }
+      prompts.forEach((prompt) => counts.set(prompt, (counts.get(prompt) || 0) + 1));
+    });
+    return {
+      independent: independent,
+      cues: Array.from(counts.entries()).map(([label, count]) => ({ label, count })),
+    };
+  }
+
+  function getObjectiveDraft(id) {
+    const session = getSession(id);
+    if (!session.end_time) { throw new Error("End the session before drafting an Objective note."); }
+
+    const targetCount = session.targets.length;
+    const sentences = [
+      "During a session lasting " + formatDurationWords(session.duration_seconds) +
+        ", data were collected across " + targetCount + " target" + (targetCount === 1 ? "" : "s") + ".",
+    ];
+
+    if (!session.overall.total) {
+      sentences.push("No trial data were recorded.");
+    } else {
+      sentences.push(
+        "Across all targets, the client responded accurately in " + session.overall.correct + " of " +
+        opportunityText(session.overall.total) + " (" + session.overall.percent + "%)."
+      );
+
+      session.targets.forEach((target) => {
+        const datapoints = session.datapoints.filter((datapoint) => datapoint.target_id === target.id);
+        if (!datapoints.length) {
+          sentences.push("No trials were recorded for " + target.label + ".");
+          return;
+        }
+
+        const prompts = cueSummary(datapoints);
+        let cueSentence = "Performance was independent in " + prompts.independent + " of " +
+          opportunityText(datapoints.length) + " (" +
+          Math.round((100 * prompts.independent) / datapoints.length) + "%).";
+        if (prompts.cues.length) {
+          cueSentence += " Recorded cueing included " + prompts.cues.map((cue) =>
+            cue.label + " on " + opportunityText(cue.count)
+          ).join(", ") + ".";
+        }
+
+        sentences.push(
+          "For " + target.label + ", the client responded accurately in " + target.correct + " of " +
+          opportunityText(target.total) + " (" + target.percent + "%). " + cueSentence
+        );
+      });
+    }
+
+    sentences.push(
+      "[Add the session activity or materials, skilled interventions or modifications, and the client's response. " +
+      "Verify all details before using this draft.]"
+    );
+    return sentences.join(" ");
+  }
+
   function startSession(clientLabel, targetIds) {
     clientLabel = (clientLabel || "").trim();
     if (!clientLabel) { throw new Error("A client label is required."); }
@@ -588,7 +670,7 @@ const DataTaker = (function () {
     allTargets,
     getClients, addClient,
     getCues, addCue, renameCue, deleteCue,
-    getSessions, getPastSessions, getSession, startSession, endSession,
+    getSessions, getPastSessions, getSession, getObjectiveDraft, startSession, endSession,
     addSessionTarget, renameSessionTarget, addDatapoint, deleteDatapoint,
     exportAll, importAll,
   };
