@@ -1,0 +1,15 @@
+{
+  "name": "Data Taker — SLP Practice Tool",
+  "short_name": "Data Taker",
+  "description": "Trial-by-trial SLP data collection practice tool. Educational use only — stores no PHI.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Local runtime data written by the app (keep seed files, ignore live churn)
+# NOTE: data/*.json ARE tracked as seeds. If you want a clean repo without
+# accumulated test sessions, reset them with `git checkout data/`.
+*.tmp
