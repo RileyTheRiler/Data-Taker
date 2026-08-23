@@ -26,13 +26,17 @@ logging.
   everything is device-local).
 - **Session engine** — start/end a session with an auto-running timer; total
   duration is computed for ASHA practicum-hour logging.
+- **Session history** — ended sessions are listed by anonymized client with
+  duration, overall accuracy, and expandable per-target accuracy. Target labels
+  and goal paths are snapshotted so later goal edits do not rewrite history.
 - **Mobile & iPad-first** — anonymized client header, a swipeable/tappable
   carousel of the session's targets, large **+ / −** tap buttons, and an
   installable PWA (Add to Home Screen on iPad/iPhone for a full-screen,
   app-like experience — see `manifest.json`).
 - **SLP cueing toggles** — Max, Mod, Min, Visual, Verbal, Tactile (replacing ABA
-  prompt vocabulary). Arm cues before a tap; they attach to the recorded trial and
-  persist for fast repeated entries.
+  prompt vocabulary) are included by default. Cue types can be added, renamed,
+  or deleted on the home page. Arm cues before a tap; they attach to the recorded
+  trial and persist for fast repeated entries. Later cue edits do not rewrite old trials.
 - **Real-time dashboard** — running % accuracy for the active target and overall,
   plus a scrolling **last-5** trial log with one-tap **undo** for error correction.
 - **Activity log** — a lightweight ledger (`dataTaker.activityLog.v1` in
@@ -105,11 +109,15 @@ Home Screen** to install it as a full-screen app (per `manifest.json`).
 |---|---|
 | `dataTaker.goals.v1` | The goal hierarchy (domains → LTGs → STGs → targets) |
 | `dataTaker.clients.v1` | Anonymized client labels |
-| `dataTaker.sessions.v1` | Sessions + embedded datapoints |
+| `dataTaker.cues.v1` | Editable cue type labels |
+| `dataTaker.sessions.v2` | Sessions + embedded datapoints + target metadata snapshots |
 | `dataTaker.activityLog.v1` | Action ledger |
 
 Use the **Export backup** / **Import backup** buttons on the home page to move
 this data between devices or back it up before clearing site data.
+
+Session data migrates automatically from `dataTaker.sessions.v1` to `.v2` on
+first load. The original `.v1` key remains untouched as a recovery copy.
 
 ## Future work (deferred)
 

@@ -9,11 +9,14 @@ const DataTaker = (function () {
   const KEYS = {
     goals: "dataTaker.goals.v1",
     clients: "dataTaker.clients.v1",
-    sessions: "dataTaker.sessions.v1",
+    cues: "dataTaker.cues.v1",
+    sessions: "dataTaker.sessions.v2",
     activity: "dataTaker.activityLog.v1",
   };
 
-  const PROMPT_LEVELS = new Set(["Max", "Mod", "Min", "Visual", "Verbal", "Tactile"]);
+  const LEGACY_KEYS = {
+    sessions: "dataTaker.sessions.v1",
+  };
 
   function uid() {
     if (window.crypto && crypto.randomUUID) { return crypto.randomUUID().replace(/-/g, ""); }
@@ -125,6 +128,13 @@ const DataTaker = (function () {
         },
       ],
     };
+  }
+
+  function defaultCues() {
+    return ["Max", "Mod", "Min", "Visual", "Verbal", "Tactile"].map((label) => ({
+      id: "cue-" + label.toLowerCase(),
+      label: label,
+    }));
   }
 
   function appendActivity(action, entity, entityId) {
@@ -267,10 +277,89 @@ const DataTaker = (function () {
     return client;
   }
 
+  // ---------- Cue types ----------
+
+  function getCues() {
+    let cues = read(KEYS.cues, null);
+    if (!Array.isArray(cues)) {
+      cues = defaultCues();
+      write(KEYS.cues, cues);
+    }
+    return cues;
+  }
+
+  function normalizedCueLabel(label) {
+    label = (label || "").trim();
+    if (!label) { throw new Error("A cue label is required."); }
+    if (label.length > 40) { throw new Error("Cue labels must be 40 characters or fewer."); }
+    return label;
+  }
+
+  function assertUniqueCueLabel(cues, label, exceptId) {
+    const duplicate = cues.some((cue) => cue.id !== exceptId &&
+      cue.label.toLowerCase() === label.toLowerCase());
+    if (duplicate) { throw new Error("That cue label already exists."); }
+  }
+
+  function addCue(label) {
+    label = normalizedCueLabel(label);
+    const cues = getCues();
+    assertUniqueCueLabel(cues, label, null);
+    const cue = { id: "cue-" + uid(), label: label };
+    cues.push(cue);
+    write(KEYS.cues, cues);
+    appendActivity("create", "cue", cue.id);
+    return cue;
+  }
+
+  function renameCue(id, label) {
+    label = normalizedCueLabel(label);
+    const cues = getCues();
+    const cue = cues.find((item) => item.id === id);
+    if (!cue) { throw new Error("Cue type not found."); }
+    assertUniqueCueLabel(cues, label, id);
+    cue.label = label;
+    write(KEYS.cues, cues);
+    appendActivity("modify", "cue", id);
+    return cue;
+  }
+
+  function deleteCue(id) {
+    const cues = getCues();
+    if (!cues.some((cue) => cue.id === id)) { throw new Error("Cue type not found."); }
+    write(KEYS.cues, cues.filter((cue) => cue.id !== id));
+    appendActivity("delete", "cue", id);
+  }
+
   // ---------- Sessions ----------
 
   function getSessions() {
-    return read(KEYS.sessions, []);
+    const sessions = read(KEYS.sessions, null);
+    if (Array.isArray(sessions)) { return sessions; }
+
+    // v2 adds immutable target metadata snapshots for reliable history. Keep
+    // the v1 key intact so migration is recoverable, then write the upgraded
+    // copy to the new key.
+    const legacySessions = read(LEGACY_KEYS.sessions, []);
+    const known = allTargets();
+    const migrated = Array.isArray(legacySessions)
+      ? legacySessions.map((session) => migrateSession(session, known))
+      : [];
+    write(KEYS.sessions, migrated);
+    return migrated;
+  }
+
+  function migrateSession(session, knownTargets) {
+    const migrated = { ...session };
+    if (!migrated.target_snapshots || typeof migrated.target_snapshots !== "object") {
+      migrated.target_snapshots = {};
+    }
+    (migrated.target_ids || []).forEach((targetId) => {
+      if (!migrated.target_snapshots[targetId] && knownTargets[targetId]) {
+        migrated.target_snapshots[targetId] = { ...knownTargets[targetId] };
+      }
+    });
+    return migrated;
   }
 
   function saveSessions(sessions) {
@@ -295,7 +384,8 @@ const DataTaker = (function () {
     const targets = (session.target_ids || []).map((tid) => {
       const tdps = datapoints.filter((dp) => dp.target_id === tid);
       const acc = accuracy(tdps);
-      const meta = known[tid] || { id: tid, label: tid };
+      const snapshot = session.target_snapshots && session.target_snapshots[tid];
+      const meta = snapshot || known[tid] || { id: tid, label: "Target " + tid };
       return { ...meta, ...acc };
     });
 
@@ -311,6 +401,16 @@ const DataTaker = (function () {
     return { ...session, targets, overall, duration_seconds };
   }
 
+  function getPastSessions(clientLabel) {
+    const normalizedLabel = (clientLabel || "").trim().toLowerCase();
+    if (!normalizedLabel) { return []; }
+    return getSessions()
+      .filter((session) => session.end_time &&
+        (session.client_label || "").trim().toLowerCase() === normalizedLabel)
+      .map(sessionView)
+      .sort((a, b) => new Date(b.end_time).getTime() - new Date(a.end_time).getTime());
+  }
+
   function startSession(clientLabel, targetIds) {
     clientLabel = (clientLabel || "").trim();
     if (!clientLabel) { throw new Error("A client label is required."); }
@@ -320,10 +420,16 @@ const DataTaker = (function () {
     const invalid = targetIds.filter((t) => !known[t]);
     if (invalid.length) { throw new Error("Unknown target(s): " + invalid.join(", ")); }
 
+    const targetSnapshots = {};
+    targetIds.forEach((targetId) => {
+      targetSnapshots[targetId] = { ...known[targetId] };
+    });
+
     const session = {
       id: uid(),
       client_label: clientLabel,
       target_ids: targetIds,
+      target_snapshots: targetSnapshots,
       start_time: now(),
       end_time: null,
       datapoints: [],
@@ -361,7 +467,8 @@ const DataTaker = (function () {
     if (!session.target_ids.includes(targetId)) { throw new Error("Target is not part of this session."); }
     if (result !== "+" && result !== "-") { throw new Error("Result must be '+' or '-'."); }
 
-    const prompts = (promptLevels || []).filter((p) => PROMPT_LEVELS.has(p));
+    const cueLabels = new Set(getCues().map((cue) => cue.label));
+    const prompts = (promptLevels || []).filter((prompt) => cueLabels.has(prompt));
     const datapoint = {
       id: uid(),
       target_id: targetId,
@@ -391,9 +498,11 @@ const DataTaker = (function () {
 
   function exportAll() {
     return {
+      schema_version: 2,
       exported_at: now(),
       goals: getGoals(),
       clients: getClients(),
+      cues: getCues(),
       sessions: getSessions(),
       activity_log: read(KEYS.activity, []),
     };
@@ -403,7 +512,14 @@ const DataTaker = (function () {
     if (!data || typeof data !== "object") { throw new Error("Invalid backup file."); }
     if (data.goals) { write(KEYS.goals, data.goals); }
     if (data.clients) { write(KEYS.clients, data.clients); }
-    if (data.sessions) { write(KEYS.sessions, data.sessions); }
+    if (Array.isArray(data.cues)) { write(KEYS.cues, data.cues); }
+    if (data.sessions) {
+      const known = allTargets();
+      const sessions = Array.isArray(data.sessions)
+        ? data.sessions.map((session) => migrateSession(session, known))
+        : [];
+      write(KEYS.sessions, sessions);
+    }
     if (data.activity_log) { write(KEYS.activity, data.activity_log); }
   }
 
@@ -412,7 +528,8 @@ const DataTaker = (function () {
     deleteDomain, deleteLongTermGoal, deleteShortTermGoal, deleteTarget,
     allTargets,
     getClients, addClient,
-    getSessions, getSession, startSession, endSession, addDatapoint, deleteDatapoint,
+    getCues, addCue, renameCue, deleteCue,
+    getSessions, getPastSessions, getSession, startSession, endSession, addDatapoint, deleteDatapoint,
     exportAll, importAll,
   };
 })();
