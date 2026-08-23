@@ -45,7 +45,7 @@ function renderCarousel() {
     '<div class="carousel-target-path"></div>';
   track.querySelector(".carousel-target-label").textContent = target.label;
   track.querySelector(".carousel-target-path").textContent =
-    target.domain + " · " + target.short_term_goal;
+    [target.domain, target.short_term_goal].filter(Boolean).join(" · ");
 
   const dots = document.getElementById("carousel-dots");
   dots.innerHTML = "";
@@ -61,6 +61,94 @@ function moveCarousel(delta) {
   activeIndex = (activeIndex + delta + state.targets.length) % state.targets.length;
   renderCarousel();
   renderDashboard();
+  renderTargetManager();
+}
+
+// ---------- Mid-session target management ----------
+
+function showTargetManagerStatus(message, isError) {
+  const status = document.getElementById("target-manager-status");
+  status.textContent = message || "";
+  status.classList.toggle("success", Boolean(message) && !isError);
+}
+
+function renderTargetManager() {
+  const target = activeTarget();
+  const toggle = document.getElementById("toggle-target-manager");
+  const panel = document.getElementById("target-manager");
+  const editInput = document.getElementById("edit-target-label");
+  const select = document.getElementById("available-targets");
+  const addButton = document.getElementById("add-session-target");
+  const ended = Boolean(state && state.end_time);
+
+  toggle.disabled = ended || !target;
+  if (ended) {
+    panel.classList.add("hidden");
+    toggle.setAttribute("aria-expanded", "false");
+    return;
+  }
+
+  editInput.value = target ? target.label : "";
+  select.innerHTML = "";
+  const included = new Set(state.target_ids);
+  const available = Object.values(DataTaker.allTargets()).filter((item) => !included.has(item.id));
+  if (!available.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "All configured targets are included";
+    select.appendChild(option);
+    addButton.disabled = true;
+  } else {
+    available.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = item.label + (item.domain ? " · " + item.domain : "");
+      select.appendChild(option);
+    });
+    addButton.disabled = false;
+  }
+}
+
+function setTargetManager(open) {
+  const panel = document.getElementById("target-manager");
+  const toggle = document.getElementById("toggle-target-manager");
+  panel.classList.toggle("hidden", !open);
+  toggle.setAttribute("aria-expanded", String(open));
+  showTargetManagerStatus("", false);
+  if (open) {
+    renderTargetManager();
+    document.getElementById("edit-target-label").focus();
+  }
+}
+
+function saveTargetLabel() {
+  const target = activeTarget();
+  if (!target) { return; }
+  try {
+    const updated = DataTaker.renameSessionTarget(
+      sessionId,
+      target.id,
+      document.getElementById("edit-target-label").value
+    );
+    applyState(updated);
+    showTargetManagerStatus("Target label saved.", false);
+  } catch (e) {
+    showTargetManagerStatus(e.message, true);
+  }
+}
+
+function addTargetToSession() {
+  const select = document.getElementById("available-targets");
+  if (!select.value) { return; }
+  try {
+    const targetId = select.value;
+    const updated = DataTaker.addSessionTarget(sessionId, targetId);
+    activeIndex = updated.targets.findIndex((target) => target.id === targetId);
+    applyState(updated);
+    showTargetManagerStatus("Target added to this session.", false);
+  } catch (e) {
+    showTargetManagerStatus(e.message, true);
+  }
 }
 
 // ---------- Dashboard ----------
@@ -127,6 +215,7 @@ function renderAll() {
   document.getElementById("client-label").textContent = state.client_label;
   renderCarousel();
   renderDashboard();
+  renderTargetManager();
   renderRecent();
   tickTimer();
 
@@ -176,6 +265,7 @@ function showEnded() {
   document.getElementById("tap-correct").disabled = true;
   document.getElementById("tap-incorrect").disabled = true;
   document.getElementById("end-session").disabled = true;
+  document.getElementById("toggle-target-manager").disabled = true;
   const banner = document.getElementById("ended-banner");
   banner.classList.remove("hidden");
   if (state.duration_seconds != null) {
@@ -230,6 +320,18 @@ document.getElementById("tap-incorrect").addEventListener("click", function () {
 document.getElementById("prev-target").addEventListener("click", function () { moveCarousel(-1); });
 document.getElementById("next-target").addEventListener("click", function () { moveCarousel(1); });
 document.getElementById("end-session").addEventListener("click", endSession);
+document.getElementById("toggle-target-manager").addEventListener("click", function () {
+  const panel = document.getElementById("target-manager");
+  setTargetManager(panel.classList.contains("hidden"));
+});
+document.getElementById("close-target-manager").addEventListener("click", function () {
+  setTargetManager(false);
+});
+document.getElementById("save-target-label").addEventListener("click", saveTargetLabel);
+document.getElementById("edit-target-label").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") { saveTargetLabel(); }
+});
+document.getElementById("add-session-target").addEventListener("click", addTargetToSession);
 
 // Swipe support on the carousel track.
 (function () {

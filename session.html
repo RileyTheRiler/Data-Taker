@@ -34,7 +34,32 @@
     <div class="carousel-track" id="carousel-track"></div>
     <button id="next-target" class="carousel-arrow" type="button" aria-label="Next target">&#8250;</button>
   </div>
-  <div id="carousel-dots" class="carousel-dots"></div>
+  <div class="carousel-footer">
+    <div id="carousel-dots" class="carousel-dots"></div>
+    <button id="toggle-target-manager" class="target-manage-toggle" type="button" aria-expanded="false">
+      Manage targets
+    </button>
+  </div>
+
+  <section id="target-manager" class="target-manager hidden" aria-labelledby="target-manager-title">
+    <div class="target-manager-head">
+      <h2 id="target-manager-title">Session targets</h2>
+      <button id="close-target-manager" class="btn-link" type="button">Done</button>
+    </div>
+
+    <label class="field-label" for="edit-target-label">Current target label</label>
+    <div class="target-manager-row">
+      <input id="edit-target-label" class="field" type="text" maxlength="160" autocomplete="off">
+      <button id="save-target-label" class="btn-secondary" type="button">Save</button>
+    </div>
+
+    <label class="field-label" for="available-targets">Add a configured target</label>
+    <div class="target-manager-row">
+      <select id="available-targets" class="field"></select>
+      <button id="add-session-target" class="btn-secondary" type="button">Add</button>
+    </div>
+    <p id="target-manager-status" class="error" role="status"></p>
+  </section>
 
   <!-- Real-time dashboard -->
   <section class="dashboard">

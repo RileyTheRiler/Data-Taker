@@ -25,7 +25,9 @@ logging.
   re-import it (useful before clearing browser data or moving devices, since
   everything is device-local).
 - **Session engine** — start/end a session with an auto-running timer; total
-  duration is computed for ASHA practicum-hour logging.
+  duration is computed for ASHA practicum-hour logging. Configured targets can
+  be added during an active session, and the current target label can be edited
+  without detaching any recorded trials.
 - **Session history** — ended sessions are listed by anonymized client with
   duration, overall accuracy, and expandable per-target accuracy. Target labels
   and goal paths are snapshotted so later goal edits do not rewrite history.
