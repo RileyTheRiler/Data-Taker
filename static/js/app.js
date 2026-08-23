@@ -187,18 +187,41 @@ function showEnded() {
 
 // ---------- Cue toggles ----------
 
-document.querySelectorAll(".cue").forEach(function (btn) {
-  btn.addEventListener("click", function () {
-    const cue = btn.dataset.cue;
-    if (armedCues.has(cue)) {
-      armedCues.delete(cue);
-      btn.classList.remove("active");
-    } else {
-      armedCues.add(cue);
-      btn.classList.add("active");
-    }
+function renderCueToggles() {
+  const container = document.getElementById("cue-toggles");
+  const cues = DataTaker.getCues();
+  container.innerHTML = "";
+
+  if (!cues.length) {
+    const empty = document.createElement("p");
+    empty.className = "cues-empty";
+    empty.textContent = "No cue types configured · trials will be recorded independently";
+    container.appendChild(empty);
+    return;
+  }
+
+  cues.forEach(function (cueType) {
+    const btn = document.createElement("button");
+    btn.className = "cue";
+    btn.type = "button";
+    btn.dataset.cue = cueType.label;
+    btn.textContent = cueType.label;
+    btn.setAttribute("aria-pressed", "false");
+    btn.addEventListener("click", function () {
+      const cue = btn.dataset.cue;
+      if (armedCues.has(cue)) {
+        armedCues.delete(cue);
+        btn.classList.remove("active");
+        btn.setAttribute("aria-pressed", "false");
+      } else {
+        armedCues.add(cue);
+        btn.classList.add("active");
+        btn.setAttribute("aria-pressed", "true");
+      }
+    });
+    container.appendChild(btn);
   });
-});
+}
 
 // ---------- Wire up ----------
 
@@ -228,6 +251,7 @@ function init() {
     return;
   }
   try {
+    renderCueToggles();
     const data = DataTaker.getSession(sessionId);
     applyState(data);
     timerHandle = setInterval(tickTimer, 1000);

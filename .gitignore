@@ -11,6 +11,11 @@ env/
 .idea/
 .vscode/
 
+# JavaScript test dependencies and Playwright output
+node_modules/
+test-results/
+playwright-report/
+
 # Local runtime data written by the app (keep seed files, ignore live churn)
 # NOTE: data/*.json ARE tracked as seeds. If you want a clean repo without
 # accumulated test sessions, reset them with `git checkout data/`.

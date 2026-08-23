@@ -34,6 +34,15 @@
     <p id="client-error" class="error" role="alert"></p>
   </section>
 
+  <section class="card history-card" aria-labelledby="history-title">
+    <div class="card-head">
+      <h2 id="history-title">Past sessions</h2>
+      <span id="past-session-count" class="history-count"></span>
+    </div>
+    <p class="hint">Ended sessions for the selected client, newest first.</p>
+    <div id="past-sessions" class="session-history" aria-live="polite"></div>
+  </section>
+
   <section class="card">
     <div class="card-head">
       <h2>2. Select today's targets</h2>
@@ -79,6 +88,23 @@
     <p id="selection-summary" class="hint">No targets selected yet.</p>
     <button id="start-session" class="btn-primary" type="button" disabled>Start Session</button>
     <p id="start-error" class="error" role="alert"></p>
+  </section>
+
+  <section class="card cue-manager-card">
+    <div class="card-head">
+      <h2>Cue types</h2>
+      <button id="toggle-edit-cues" class="btn-link" type="button" aria-expanded="false">Manage cues</button>
+    </div>
+    <p id="cue-summary" class="hint"></p>
+    <div id="cue-editor" class="cue-editor hidden">
+      <p class="hint">Changes apply to future trials. Previously recorded cue labels stay in session history.</p>
+      <div id="cue-editor-list" class="cue-editor-list"></div>
+      <div class="inline-add cue-add-row">
+        <input id="new-cue-label" class="field" type="text" maxlength="40" placeholder="New cue type" autocomplete="off">
+        <button id="add-cue" class="btn-secondary" type="button">Add</button>
+      </div>
+      <p id="cue-editor-error" class="error" role="alert"></p>
+    </div>
   </section>
 
   <section class="card backup-card">

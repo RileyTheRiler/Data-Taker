@@ -38,9 +38,194 @@ function addClient() {
     input.value = "";
     loadClients();
     document.getElementById("client-select").value = client.label;
+    loadPastSessions();
   } catch (e) {
     show("client-error", e.message);
   }
+}
+
+// ---------- Past sessions ----------
+
+function formatDuration(totalSeconds) {
+  const seconds = Math.max(0, Number(totalSeconds) || 0);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  const pad = function (value) { return String(value).padStart(2, "0"); };
+  return pad(hours) + ":" + pad(minutes) + ":" + pad(remainingSeconds);
+}
+
+function formatSessionDate(isoDate) {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) { return "Date unavailable"; }
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function accuracyText(result) {
+  if (!result.total) { return "No trials"; }
+  return result.percent + "% · " + result.correct + "/" + result.total + " correct";
+}
+
+function loadPastSessions() {
+  const list = document.getElementById("past-sessions");
+  const count = document.getElementById("past-session-count");
+  const clientLabel = document.getElementById("client-select").value;
+  list.innerHTML = "";
+  count.textContent = "";
+
+  if (!clientLabel) {
+    const empty = document.createElement("p");
+    empty.className = "history-empty";
+    empty.textContent = "Choose a client to review prior sessions.";
+    list.appendChild(empty);
+    return;
+  }
+
+  const sessions = DataTaker.getPastSessions(clientLabel);
+  count.textContent = sessions.length + " ended";
+  if (!sessions.length) {
+    const empty = document.createElement("p");
+    empty.className = "history-empty";
+    empty.textContent = "No ended sessions for this client yet.";
+    list.appendChild(empty);
+    return;
+  }
+
+  sessions.forEach(function (session) {
+    const item = document.createElement("details");
+    item.className = "history-item";
+
+    const summary = document.createElement("summary");
+    const summaryMain = document.createElement("span");
+    summaryMain.className = "history-summary-main";
+    summaryMain.textContent = formatSessionDate(session.end_time);
+    summary.appendChild(summaryMain);
+
+    const summaryMetrics = document.createElement("span");
+    summaryMetrics.className = "history-summary-metrics";
+    summaryMetrics.textContent = formatDuration(session.duration_seconds) + " · " +
+      accuracyText(session.overall);
+    summary.appendChild(summaryMetrics);
+    item.appendChild(summary);
+
+    const targets = document.createElement("ul");
+    targets.className = "history-targets";
+    session.targets.forEach(function (target) {
+      const row = document.createElement("li");
+      const targetInfo = document.createElement("span");
+      targetInfo.className = "history-target-info";
+
+      const targetName = document.createElement("span");
+      targetName.className = "history-target-name";
+      targetName.textContent = target.label;
+      targetInfo.appendChild(targetName);
+
+      if (target.domain || target.short_term_goal) {
+        const targetPath = document.createElement("span");
+        targetPath.className = "history-target-path";
+        targetPath.textContent = [target.domain, target.short_term_goal].filter(Boolean).join(" · ");
+        targetInfo.appendChild(targetPath);
+      }
+      row.appendChild(targetInfo);
+
+      const targetAccuracy = document.createElement("span");
+      targetAccuracy.className = "history-target-accuracy";
+      targetAccuracy.textContent = accuracyText(target);
+      row.appendChild(targetAccuracy);
+      targets.appendChild(row);
+    });
+    item.appendChild(targets);
+    list.appendChild(item);
+  });
+}
+
+// ---------- Cue type editor ----------
+
+function loadCues() {
+  const cues = DataTaker.getCues();
+  const list = document.getElementById("cue-editor-list");
+  const summary = document.getElementById("cue-summary");
+  summary.textContent = cues.length + " cue type" + (cues.length === 1 ? "" : "s") +
+    " available during sessions.";
+  list.innerHTML = "";
+
+  if (!cues.length) {
+    const empty = document.createElement("p");
+    empty.className = "history-empty";
+    empty.textContent = "No cue types configured. Trials can still be recorded independently.";
+    list.appendChild(empty);
+    return;
+  }
+
+  cues.forEach(function (cue) {
+    const row = document.createElement("div");
+    row.className = "cue-editor-row";
+
+    const input = document.createElement("input");
+    input.className = "field";
+    input.type = "text";
+    input.maxLength = 40;
+    input.value = cue.label;
+    input.setAttribute("aria-label", "Cue label");
+    row.appendChild(input);
+
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "btn-secondary cue-save";
+    save.textContent = "Save";
+    save.addEventListener("click", function () {
+      show("cue-editor-error", "");
+      try {
+        DataTaker.renameCue(cue.id, input.value);
+        loadCues();
+      } catch (e) {
+        show("cue-editor-error", e.message);
+      }
+    });
+    row.appendChild(save);
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "btn-danger-small";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", function () {
+      if (!confirm('Delete cue type "' + cue.label + '"? Existing trials will keep the label.')) { return; }
+      show("cue-editor-error", "");
+      try {
+        DataTaker.deleteCue(cue.id);
+        loadCues();
+      } catch (e) {
+        show("cue-editor-error", e.message);
+      }
+    });
+    row.appendChild(remove);
+    list.appendChild(row);
+  });
+}
+
+function addCue() {
+  const input = document.getElementById("new-cue-label");
+  show("cue-editor-error", "");
+  try {
+    DataTaker.addCue(input.value);
+    input.value = "";
+    loadCues();
+  } catch (e) {
+    show("cue-editor-error", e.message);
+  }
+}
+
+function toggleCueEditor() {
+  const editor = document.getElementById("cue-editor");
+  const btn = document.getElementById("toggle-edit-cues");
+  const opening = editor.classList.contains("hidden");
+  editor.classList.toggle("hidden");
+  btn.textContent = opening ? "Done" : "Manage cues";
+  btn.setAttribute("aria-expanded", String(opening));
+  if (opening) { loadCues(); }
 }
 
 // ---------- Goal tree (selection view) ----------
@@ -357,6 +542,8 @@ function importData(file) {
       DataTaker.importAll(data);
       refreshEverything();
       loadClients();
+      loadPastSessions();
+      loadCues();
       show("backup-status", "Backup restored.");
     } catch (e) {
       show("backup-status", "Could not read that backup file.");
@@ -368,15 +555,21 @@ function importData(file) {
 // ---------- Wire up ----------
 
 document.getElementById("add-client").addEventListener("click", addClient);
+document.getElementById("client-select").addEventListener("change", loadPastSessions);
 document.getElementById("new-client").addEventListener("keydown", function (e) {
   if (e.key === "Enter") { addClient(); }
 });
 document.getElementById("start-session").addEventListener("click", startSession);
 document.getElementById("toggle-edit-goals").addEventListener("click", toggleEditGoals);
+document.getElementById("toggle-edit-cues").addEventListener("click", toggleCueEditor);
 document.getElementById("add-domain").addEventListener("click", addDomain);
 document.getElementById("add-ltg").addEventListener("click", addLtg);
 document.getElementById("add-stg").addEventListener("click", addStg);
 document.getElementById("add-target").addEventListener("click", addTarget);
+document.getElementById("add-cue").addEventListener("click", addCue);
+document.getElementById("new-cue-label").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") { addCue(); }
+});
 document.getElementById("export-data").addEventListener("click", exportData);
 document.getElementById("import-data").addEventListener("change", function (e) {
   if (e.target.files && e.target.files[0]) { importData(e.target.files[0]); }
@@ -384,3 +577,5 @@ document.getElementById("import-data").addEventListener("change", function (e) {
 
 loadClients();
 loadGoals();
+loadPastSessions();
+loadCues();
