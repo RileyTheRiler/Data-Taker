@@ -31,6 +31,11 @@ logging.
 - **Session history** — ended sessions are listed by anonymized client with
   duration, overall accuracy, and expandable per-target accuracy. Target labels
   and goal paths are snapshotted so later goal edits do not rewrite history.
+- **Objective draft** — review any ended session and generate an editable
+  Objective paragraph from duration, accuracy, independence, and recorded cueing.
+  Download the edited draft as text or use the browser print sheet to save a PDF.
+  The app clearly prompts the clinician to add activities, skilled interventions,
+  and client response rather than inventing details that were not recorded.
 - **Mobile & iPad-first** — anonymized client header, a swipeable/tappable
   carousel of the session's targets, large **+ / −** tap buttons, and an
   installable PWA (Add to Home Screen on iPad/iPhone for a full-screen,
@@ -62,12 +67,14 @@ that one module and the fetch-style calls made from `setup.js` / `app.js`.
 ```
 index.html              # Home page (choose client, manage goals, pick targets)
 session.html            # Live session screen
+review.html             # Ended-session review and Objective draft export
 manifest.json           # PWA manifest (Add to Home Screen on iPad/iPhone)
 vercel.json             # Static hosting config (clean URLs, cache headers)
 static/css/style.css    # Mobile-first styling
 static/js/storage.js    # localStorage data layer (goals/clients/sessions/backup)
 static/js/setup.js      # Home page logic
 static/js/app.js        # Live session screen logic
+static/js/review.js     # Review screen and text/PDF export logic
 static/icons/           # App icons (favicon, apple-touch-icon, PWA icons)
 ```
 
@@ -103,7 +110,8 @@ Home Screen** to install it as a full-screen app (per `manifest.json`).
 2. **Session:** the timer runs automatically. Arm cueing chips, then tap **+** or
    **−**. Swipe the carousel (or use the arrows) to switch targets. Watch the live
    accuracy and the last-5 log; tap **×** to undo a mis-tap.
-3. **End** the session to see the total duration for hour logging.
+3. **End** the session to see the total duration for hour logging, then open the
+   review screen to edit and export an Objective draft.
 
 ## Data model (localStorage keys)
 
@@ -127,7 +135,6 @@ These were part of the original master plan and are intentionally **out of scope
 for this build, but the data model (timestamps, prompt levels, session timing,
 accuracy aggregation) is rich enough to layer them on later:
 
-- Automated **SOAP note** drafting (auto-populate the Objective section).
 - **ASHA practicum categorization** & export (adult vs. pediatric, eval vs. treatment).
 - **Supervisor review** / signature workflow with flagging.
 - **Multi-device sync** via a real backend/database — only if the project ever
