@@ -59,6 +59,18 @@ button { font-family: inherit; cursor: pointer; }
 .card h2 { margin: 0 0 6px; font-size: 16px; }
 .hint { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
 
+.card-head { display: flex; align-items: center; justify-content: space-between; }
+.card-head h2 { margin: 0; }
+.btn-link {
+  border: none;
+  background: none;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 0;
+}
+.btn-link:active { opacity: 0.6; }
+
 .field {
   width: 100%;
   padding: 14px;
@@ -126,6 +138,52 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 .start-card { position: sticky; bottom: 0; }
+
+/* Goal editor (custom goals) */
+.goal-editor { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.editor-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.editor-row .field { flex: 1 1 140px; min-width: 0; }
+.editor-row .btn-secondary { flex: none; white-space: nowrap; }
+
+.domain-name, .ltg-label, .stg-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.node-remove {
+  border: none;
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--red);
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  font-size: 15px;
+  line-height: 1;
+  flex: none;
+}
+.node-remove:active { background: rgba(220, 38, 38, 0.2); }
+.target-chip-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 8px 8px 14px;
+  margin: 4px 6px 4px 0;
+  font-size: 14px;
+}
+
+/* Backup card */
+.backup-card .editor-row { margin-bottom: 6px; }
+.file-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
 
 /* ---------- Session page ---------- */
 

@@ -1,23 +1,11 @@
 // Live session screen: timer, target carousel, tap entry, dashboard, undo.
 
-const root = document.getElementById("session");
-const sessionId = root.dataset.sessionId;
+const sessionId = new URLSearchParams(window.location.search).get("id");
 
-let state = null;          // latest session view from the server
+let state = null;          // latest session view (from DataTaker, backed by localStorage)
 let activeIndex = 0;       // which target is showing in the carousel
 let armedCues = new Set(); // cueing levels armed for the next tap(s)
 let timerHandle = null;
-
-async function jsonFetch(url, options) {
-  const res = await fetch(url, options);
-  let body = null;
-  try { body = await res.json(); } catch (e) { /* no body */ }
-  if (!res.ok) {
-    const msg = (body && body.error) || ("Request failed (" + res.status + ")");
-    throw new Error(msg);
-  }
-  return body;
-}
 
 function activeTarget() {
   if (!state || !state.targets.length) { return null; }
@@ -154,47 +142,30 @@ function applyState(newState) {
 
 // ---------- Actions ----------
 
-async function recordTap(result) {
+function recordTap(result) {
   const target = activeTarget();
   if (!target || (state && state.end_time)) { return; }
   try {
-    const updated = await jsonFetch(
-      "/api/sessions/" + sessionId + "/datapoints",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          target_id: target.id,
-          result: result,
-          prompt_levels: Array.from(armedCues),
-        }),
-      }
-    );
+    const updated = DataTaker.addDatapoint(sessionId, target.id, result, Array.from(armedCues));
     applyState(updated);
   } catch (e) {
     alert(e.message);
   }
 }
 
-async function deleteDatapoint(dpId) {
+function deleteDatapoint(dpId) {
   try {
-    const updated = await jsonFetch(
-      "/api/sessions/" + sessionId + "/datapoints/" + dpId,
-      { method: "DELETE" }
-    );
+    const updated = DataTaker.deleteDatapoint(sessionId, dpId);
     applyState(updated);
   } catch (e) {
     alert(e.message);
   }
 }
 
-async function endSession() {
+function endSession() {
   if (!confirm("End this session? You won't be able to add more data.")) { return; }
   try {
-    const updated = await jsonFetch(
-      "/api/sessions/" + sessionId + "/end",
-      { method: "POST" }
-    );
+    const updated = DataTaker.endSession(sessionId);
     applyState(updated);
   } catch (e) {
     alert(e.message);
@@ -250,13 +221,19 @@ document.getElementById("end-session").addEventListener("click", endSession);
   }, { passive: true });
 })();
 
-async function init() {
+function init() {
+  if (!sessionId) {
+    alert("No session specified.");
+    window.location.href = "/";
+    return;
+  }
   try {
-    const data = await jsonFetch("/api/sessions/" + sessionId);
+    const data = DataTaker.getSession(sessionId);
     applyState(data);
     timerHandle = setInterval(tickTimer, 1000);
   } catch (e) {
     alert("Could not load session: " + e.message);
+    window.location.href = "/";
   }
 }
 

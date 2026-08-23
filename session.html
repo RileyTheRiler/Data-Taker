@@ -1,12 +1,26 @@
-{% extends "base.html" %}
-{% block title %}Data Taker — Session{% endblock %}
-
-{% block content %}
-<div id="session" data-session-id="{{ session_id }}">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Data Taker">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/static/icons/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<title>Data Taker — Session</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app">
+<div id="session">
 
   <!-- Context header -->
   <header class="context-header">
-    <a class="exit" href="{{ url_for('index') }}" title="Back to setup">&#8592;</a>
+    <a class="exit" href="/" title="Back to setup">&#8592;</a>
     <div class="context-meta">
       <span id="client-label" class="client-label">&hellip;</span>
       <span id="timer" class="timer">00:00:00</span>
@@ -69,11 +83,11 @@
   <div id="ended-banner" class="ended-banner hidden">
     <p>Session ended.</p>
     <p>Total duration: <strong id="final-duration">—</strong></p>
-    <a class="btn-primary" href="{{ url_for('index') }}">New Session</a>
+    <a class="btn-primary" href="/">New Session</a>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
-{% endblock %}
+</div>
+<script src="/static/js/storage.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

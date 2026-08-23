@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Data Taker">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/static/icons/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<title>Data Taker — Start Session</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app">
+
+<header class="topbar">
+  <h1>Data Taker</h1>
+  <p class="subtitle">SLP trial-by-trial data collection &middot; practice tool</p>
+</header>
+
+<main class="setup">
+  <section class="card">
+    <h2>1. Choose a client</h2>
+    <p class="hint">Anonymized labels only — never enter a real name or any identifying information.</p>
+    <select id="client-select" class="field"></select>
+    <div class="inline-add">
+      <input id="new-client" class="field" type="text" placeholder="New label, e.g. Client C" autocomplete="off">
+      <button id="add-client" class="btn-secondary" type="button">Add</button>
+    </div>
+    <p id="client-error" class="error" role="alert"></p>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>2. Select today's targets</h2>
+      <button id="toggle-edit-goals" class="btn-link" type="button">Manage goals</button>
+    </div>
+    <p class="hint">Tap targets to add them to the session's swipeable carousel.</p>
+    <div id="goal-tree" class="goal-tree"></div>
+    <div id="goal-editor" class="goal-editor hidden">
+      <p class="hint">Add your own domains, goals, and targets. Everything here (including the
+        starter examples) can be edited or removed — it's stored only on this device.</p>
+
+      <div class="editor-row">
+        <input id="new-domain-name" class="field" type="text" placeholder="New domain, e.g. Voice" autocomplete="off">
+        <button id="add-domain" class="btn-secondary" type="button">Add domain</button>
+      </div>
+
+      <div class="editor-row">
+        <select id="ltg-domain-select" class="field"></select>
+        <input id="new-ltg-label" class="field" type="text" placeholder="New long-term goal" autocomplete="off">
+        <button id="add-ltg" class="btn-secondary" type="button">Add LTG</button>
+      </div>
+
+      <div class="editor-row">
+        <select id="stg-domain-select" class="field"></select>
+        <select id="stg-ltg-select" class="field"></select>
+        <input id="new-stg-label" class="field" type="text" placeholder="New short-term goal" autocomplete="off">
+        <button id="add-stg" class="btn-secondary" type="button">Add STG</button>
+      </div>
+
+      <div class="editor-row">
+        <select id="target-domain-select" class="field"></select>
+        <select id="target-ltg-select" class="field"></select>
+        <select id="target-stg-select" class="field"></select>
+        <input id="new-target-label" class="field" type="text" placeholder="New target" autocomplete="off">
+        <button id="add-target" class="btn-secondary" type="button">Add target</button>
+      </div>
+      <p id="goal-editor-error" class="error" role="alert"></p>
+    </div>
+  </section>
+
+  <section class="card start-card">
+    <h2>3. Start</h2>
+    <p id="selection-summary" class="hint">No targets selected yet.</p>
+    <button id="start-session" class="btn-primary" type="button" disabled>Start Session</button>
+    <p id="start-error" class="error" role="alert"></p>
+  </section>
+
+  <section class="card backup-card">
+    <h2>Data on this device</h2>
+    <p class="hint">Everything is stored locally in this browser — nothing is uploaded. Export a
+      backup before clearing browser data or switching devices.</p>
+    <div class="editor-row">
+      <button id="export-data" class="btn-secondary" type="button">Export backup</button>
+      <label class="btn-secondary file-btn">
+        Import backup
+        <input id="import-data" type="file" accept="application/json" hidden>
+      </label>
+    </div>
+    <p id="backup-status" class="hint"></p>
+  </section>
+</main>
+
+</div>
+<script src="/static/js/storage.js"></script>
+<script src="/static/js/setup.js"></script>
+</body>
+</html>
