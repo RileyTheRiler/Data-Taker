@@ -106,3 +106,28 @@ test("adds and edits a custom cue used by the session screen", async ({ page }) 
   await page.goto("/session.html?id=" + sessionId);
   await expect(page.locator('.cue[data-cue="Gesture"]')).toBeVisible();
 });
+
+test("adds and renames a target during a session without losing its trial", async ({ page }) => {
+  const sessionId = await page.evaluate(() => {
+    const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+    DataTaker.addDatapoint(session.id, "tgt-r-cvc", "+", []);
+    return session.id;
+  });
+  await page.goto("/session.html?id=" + sessionId);
+
+  await page.locator("#toggle-target-manager").click();
+  await page.locator("#available-targets").selectOption("tgt-r-blends");
+  await page.locator("#add-session-target").click();
+  await expect(page.locator(".carousel-target-label")).toHaveText("Initial /r/ blends (br, cr, gr)");
+
+  await page.locator("#tap-incorrect").click();
+  await page.locator("#edit-target-label").fill("Initial rhotic blends");
+  await page.locator("#save-target-label").click();
+  await expect(page.locator(".carousel-target-label")).toHaveText("Initial rhotic blends");
+  await expect(page.locator(".recent-item").first()).toContainText("Initial rhotic blends");
+
+  const session = await page.evaluate((id) => DataTaker.getSession(id), sessionId);
+  expect(session.datapoints).toHaveLength(2);
+  expect(session.datapoints[0].target_id).toBe("tgt-r-cvc");
+  expect(session.datapoints[1].target_id).toBe("tgt-r-blends");
+});

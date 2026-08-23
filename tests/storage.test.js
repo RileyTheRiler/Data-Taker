@@ -87,3 +87,43 @@ test("supports custom cue labels without rewriting recorded trials", () => {
   assert.deepEqual(Array.from(history[0].datapoints[0].prompt_levels), ["Gestural"]);
   assert.equal(DataTaker.getCues().some((item) => item.id === cue.id), false);
 });
+
+test("adds a target during a session without disturbing prior trials", () => {
+  const { DataTaker } = loadDataTaker();
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  DataTaker.addDatapoint(session.id, "tgt-r-cvc", "+", []);
+
+  const updated = DataTaker.addSessionTarget(session.id, "tgt-r-blends");
+
+  assert.deepEqual(Array.from(updated.target_ids), ["tgt-r-cvc", "tgt-r-blends"]);
+  assert.equal(updated.datapoints.length, 1);
+  assert.equal(updated.datapoints[0].target_id, "tgt-r-cvc");
+  assert.equal(updated.targets[0].total, 1);
+  assert.equal(updated.targets[1].total, 0);
+});
+
+test("renames an active target without rewriting completed history or trial IDs", () => {
+  const { DataTaker } = loadDataTaker();
+  const completed = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  DataTaker.addDatapoint(completed.id, "tgt-r-cvc", "+", []);
+  DataTaker.endSession(completed.id);
+
+  const active = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  DataTaker.addDatapoint(active.id, "tgt-r-cvc", "-", ["Min"]);
+  const renamed = DataTaker.renameSessionTarget(active.id, "tgt-r-cvc", "Initial rhotic words");
+
+  assert.equal(renamed.targets[0].id, "tgt-r-cvc");
+  assert.equal(renamed.targets[0].label, "Initial rhotic words");
+  assert.equal(renamed.datapoints[0].target_id, "tgt-r-cvc");
+  assert.equal(DataTaker.allTargets()["tgt-r-cvc"].label, "Initial rhotic words");
+  assert.equal(DataTaker.getPastSessions("Client A")[0].targets[0].label, "Initial /r/ in CVC words");
+});
+
+test("rejects target changes after a session ends", () => {
+  const { DataTaker } = loadDataTaker();
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  DataTaker.endSession(session.id);
+
+  assert.throws(() => DataTaker.addSessionTarget(session.id, "tgt-r-blends"), /ended/);
+  assert.throws(() => DataTaker.renameSessionTarget(session.id, "tgt-r-cvc", "Changed"), /ended/);
+});

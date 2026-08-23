@@ -257,6 +257,18 @@ const DataTaker = (function () {
     return targets;
   }
 
+  function findTargetInGoals(goals, targetId) {
+    for (const domain of goals.domains) {
+      for (const ltg of domain.long_term_goals) {
+        for (const stg of ltg.short_term_goals) {
+          const target = stg.targets.find((item) => item.id === targetId);
+          if (target) { return target; }
+        }
+      }
+    }
+    return null;
+  }
+
   // ---------- Clients ----------
 
   function getClients() {
@@ -447,6 +459,53 @@ const DataTaker = (function () {
     return sessionView(session);
   }
 
+  function addSessionTarget(id, targetId) {
+    const sessions = getSessions();
+    const session = findSession(sessions, id);
+    if (!session) { throw new Error("Session not found."); }
+    if (session.end_time) { throw new Error("Session has ended; targets cannot be changed."); }
+    if (session.target_ids.includes(targetId)) { throw new Error("Target is already part of this session."); }
+
+    const known = allTargets();
+    if (!known[targetId]) { throw new Error("Target not found."); }
+    session.target_ids.push(targetId);
+    if (!session.target_snapshots || typeof session.target_snapshots !== "object") {
+      session.target_snapshots = {};
+    }
+    session.target_snapshots[targetId] = { ...known[targetId] };
+    saveSessions(sessions);
+    appendActivity("modify", "session", id);
+    return sessionView(session);
+  }
+
+  function renameSessionTarget(id, targetId, label) {
+    label = (label || "").trim();
+    if (!label) { throw new Error("A target label is required."); }
+    if (label.length > 160) { throw new Error("Target labels must be 160 characters or fewer."); }
+
+    const sessions = getSessions();
+    const session = findSession(sessions, id);
+    if (!session) { throw new Error("Session not found."); }
+    if (session.end_time) { throw new Error("Session has ended; targets cannot be changed."); }
+    if (!session.target_ids.includes(targetId)) { throw new Error("Target is not part of this session."); }
+
+    const goals = getGoals();
+    const target = findTargetInGoals(goals, targetId);
+    if (target) {
+      target.label = label;
+      saveGoals(goals);
+    }
+
+    if (!session.target_snapshots || typeof session.target_snapshots !== "object") {
+      session.target_snapshots = {};
+    }
+    const existing = session.target_snapshots[targetId] || { id: targetId };
+    session.target_snapshots[targetId] = { ...existing, label: label };
+    saveSessions(sessions);
+    appendActivity("modify", target ? "target" : "session_target", targetId);
+    return sessionView(session);
+  }
+
   function endSession(id) {
     const sessions = getSessions();
     const session = findSession(sessions, id);
@@ -529,7 +588,8 @@ const DataTaker = (function () {
     allTargets,
     getClients, addClient,
     getCues, addCue, renameCue, deleteCue,
-    getSessions, getPastSessions, getSession, startSession, endSession, addDatapoint, deleteDatapoint,
+    getSessions, getPastSessions, getSession, startSession, endSession,
+    addSessionTarget, renameSessionTarget, addDatapoint, deleteDatapoint,
     exportAll, importAll,
   };
 })();
