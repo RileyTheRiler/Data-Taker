@@ -60,6 +60,29 @@ test("returns ended sessions for one client with target and duration summaries",
   assert.equal(DataTaker.getPastSessions("Client B").length, 0);
 });
 
+test("recovers active sessions and persists ephemeral session controls", () => {
+  const { DataTaker, values } = loadDataTaker();
+  const older = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  const current = DataTaker.startSession("Client B", ["tgt-r-blends"]);
+
+  const active = DataTaker.getActiveSessions();
+  assert.equal(active.length, 2);
+  assert.deepEqual(new Set(active.map((session) => session.id)), new Set([older.id, current.id]));
+
+  DataTaker.saveSessionUi(current.id, {
+    active_target_id: "tgt-r-blends",
+    armed_cues: ["Min", "Visual"],
+    hold_cues: false,
+  });
+  assert.deepEqual(Array.from(DataTaker.getSessionUi(current.id).armed_cues), ["Min", "Visual"]);
+  assert.equal(DataTaker.getSessionUi(current.id).hold_cues, false);
+
+  DataTaker.endSession(current.id);
+  assert.equal(DataTaker.getActiveSessions().length, 1);
+  assert.equal(DataTaker.getActiveSessions()[0].id, older.id);
+  assert.deepEqual(JSON.parse(values.get("dataTaker.sessionUi.v1")), {});
+});
+
 test("target snapshots keep history readable after its goal is deleted", () => {
   const { DataTaker } = loadDataTaker();
   const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);

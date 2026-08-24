@@ -44,6 +44,36 @@ function addClient() {
   }
 }
 
+// ---------- Active session recovery ----------
+
+function loadActiveSession() {
+  const card = document.getElementById("active-session-card");
+  const link = document.getElementById("resume-session");
+  const meta = document.getElementById("active-session-meta");
+  const active = DataTaker.getActiveSessions();
+
+  if (!active.length) {
+    card.classList.add("hidden");
+    link.href = "/session.html";
+    meta.textContent = "";
+    return;
+  }
+
+  const session = active[0];
+  const started = new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(session.start_time));
+  const additional = active.length > 1
+    ? " · " + (active.length - 1) + " other unfinished session" + (active.length === 2 ? "" : "s")
+    : "";
+
+  meta.textContent = session.client_label + " · started " + started + " · " +
+    session.datapoints.length + " trial" + (session.datapoints.length === 1 ? "" : "s") + additional;
+  link.href = "/session.html?id=" + encodeURIComponent(session.id);
+  card.classList.remove("hidden");
+}
+
 // ---------- Past sessions ----------
 
 function formatDuration(totalSeconds) {
@@ -379,10 +409,16 @@ function startSession() {
     return;
   }
   if (selectedTargets.size === 0) { return; }
+  const activeSessions = DataTaker.getActiveSessions();
+  if (activeSessions.length && !confirm(
+    "An unfinished session is still running. Start another session anyway?"
+  )) {
+    return;
+  }
 
   try {
     const session = DataTaker.startSession(clientLabel, Array.from(selectedTargets.keys()));
-    window.location.href = "/session?id=" + session.id;
+    window.location.href = "/session.html?id=" + session.id;
   } catch (e) {
     show("start-error", e.message);
   }
@@ -550,6 +586,7 @@ function importData(file) {
       loadClients();
       loadPastSessions();
       loadCues();
+      loadActiveSession();
       show("backup-status", "Backup restored.");
     } catch (e) {
       show("backup-status", "Could not read that backup file.");
@@ -582,6 +619,7 @@ document.getElementById("import-data").addEventListener("change", function (e) {
 });
 
 loadClients();
+loadActiveSession();
 loadGoals();
 loadPastSessions();
 loadCues();

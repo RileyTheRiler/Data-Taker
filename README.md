@@ -27,7 +27,8 @@ logging.
 - **Session engine** — start/end a session with an auto-running timer; total
   duration is computed for ASHA practicum-hour logging. Configured targets can
   be added during an active session, and the current target label can be edited
-  without detaching any recorded trials.
+  without detaching any recorded trials. Unfinished sessions remain recoverable
+  from the home screen, including the active target and armed cue state.
 - **Session history** — ended sessions are listed by anonymized client with
   duration, overall accuracy, and expandable per-target accuracy. Target labels
   and goal paths are snapshotted so later goal edits do not rewrite history.
@@ -37,13 +38,15 @@ logging.
   The app clearly prompts the clinician to add activities, skilled interventions,
   and client response rather than inventing details that were not recorded.
 - **Mobile & iPad-first** — anonymized client header, a swipeable/tappable
-  carousel of the session's targets, large **+ / −** tap buttons, and an
+  target strip, persistent **+ / −** data-entry dock on phones, split workspace
+  on tablets, large touch targets, and an
   installable PWA (Add to Home Screen on iPad/iPhone for a full-screen,
   app-like experience — see `manifest.json`).
-- **SLP cueing toggles** — Max, Mod, Min, Visual, Verbal, Tactile (replacing ABA
-  prompt vocabulary) are included by default. Cue types can be added, renamed,
-  or deleted on the home page. Arm cues before a tap; they attach to the recorded
-  trial and persist for fast repeated entries. Later cue edits do not rewrite old trials.
+- **Structured SLP cueing** — Independent/Minimal/Moderate/Maximum behave as one
+  mutually exclusive assistance level, while Visual, Verbal, Gestural, Model,
+  Tactile, and custom cue types can be combined. Clinicians can hold cues for
+  repeated trials or clear them automatically after each response. Later cue
+  edits do not rewrite old trials.
 - **Real-time dashboard** — running % accuracy for the active target and overall,
   plus a scrolling **last-5** trial log with one-tap **undo** for error correction.
 - **Activity log** — a lightweight ledger (`dataTaker.activityLog.v1` in

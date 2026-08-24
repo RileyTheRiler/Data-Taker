@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,17 +12,16 @@
 <link rel="icon" href="/static/icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <title>Data Taker — Session</title>
-<link rel="stylesheet" href="/static/css/style.css?v=20260824a">
-<link rel="stylesheet" href="/static/css/session-summary.css?v=20260824a">
-<link rel="stylesheet" href="/static/css/customization.css?v=20260824a">
+<link rel="stylesheet" href="/static/css/style.css?v=20260824b">
+<link rel="stylesheet" href="/static/css/session-summary.css?v=20260824b">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824b">
 </head>
 <body>
-<div class="app">
+<div class="app session-app">
 <div id="session">
 
-  <!-- Context header -->
   <header class="context-header">
-    <a class="exit" href="/" title="Back to setup">&#8592;</a>
+    <button id="exit-session" class="exit" type="button" aria-label="Back to setup">&#8592;</button>
     <div class="context-meta">
       <span id="client-label" class="client-label">&hellip;</span>
       <span id="timer" class="timer">00:00:00</span>
@@ -30,79 +29,9 @@
     <button id="end-session" class="btn-end" type="button">End</button>
   </header>
 
-  <!-- Target carousel -->
-  <div class="carousel">
-    <button id="prev-target" class="carousel-arrow" type="button" aria-label="Previous target">&#8249;</button>
-    <div class="carousel-track" id="carousel-track"></div>
-    <button id="next-target" class="carousel-arrow" type="button" aria-label="Next target">&#8250;</button>
-  </div>
-  <div class="carousel-footer">
-    <div id="carousel-dots" class="carousel-dots"></div>
-    <button id="toggle-target-manager" class="target-manage-toggle" type="button" aria-expanded="false">
-      Manage targets
-    </button>
-  </div>
-
-  <section id="target-manager" class="target-manager hidden" aria-labelledby="target-manager-title">
-    <div class="target-manager-head">
-      <h2 id="target-manager-title">Session targets</h2>
-      <button id="close-target-manager" class="btn-link" type="button">Done</button>
-    </div>
-
-    <label class="field-label" for="edit-target-label">Current target label</label>
-    <div class="target-manager-row">
-      <input id="edit-target-label" class="field" type="text" maxlength="160" autocomplete="off">
-      <button id="save-target-label" class="btn-secondary" type="button">Save</button>
-    </div>
-
-    <label class="field-label" for="available-targets">Add a configured target</label>
-    <div class="target-manager-row">
-      <select id="available-targets" class="field"></select>
-      <button id="add-session-target" class="btn-secondary" type="button">Add</button>
-    </div>
-    <p id="target-manager-status" class="error" role="status"></p>
-  </section>
-
-  <!-- Real-time dashboard -->
-  <section class="dashboard">
-    <div class="accuracy-big">
-      <span id="target-accuracy" class="accuracy-num">0%</span>
-      <span class="accuracy-caption">this target &middot; <span id="target-count">0 trials</span></span>
-    </div>
-    <div class="accuracy-small">
-      <span id="overall-accuracy" class="accuracy-num-sm">0%</span>
-      <span class="accuracy-caption">overall &middot; <span id="overall-count">0 trials</span></span>
-    </div>
-  </section>
-
-  <!-- Cueing toggles -->
-  <section class="cues">
-    <p class="cues-label">Cueing level (arm before tapping)</p>
-    <div id="cue-toggles" class="cue-toggles"></div>
-    <button id="restore-session-cues" class="btn-secondary hidden" type="button">Restore starter cues</button>
-  </section>
-
-  <!-- Action zone -->
-  <section class="action-zone">
-    <button id="tap-correct" class="tap tap-correct" type="button">
-      <span class="tap-symbol">+</span>
-      <span class="tap-label">Correct</span>
-    </button>
-    <button id="tap-incorrect" class="tap tap-incorrect" type="button">
-      <span class="tap-symbol">&minus;</span>
-      <span class="tap-label">Incorrect</span>
-    </button>
-  </section>
-
-  <!-- Last 5 log -->
-  <section class="recent">
-    <p class="recent-label">Recent trials (tap &times; to undo)</p>
-    <ul id="recent-log" class="recent-log"></ul>
-  </section>
-
-  <!-- End-of-session summary -->
-  <div id="ended-banner" class="ended-banner hidden">
-    <p>Session ended.</p>
+  <div id="ended-banner" class="ended-banner hidden" tabindex="-1">
+    <p class="eyebrow">Session complete</p>
+    <h1>Session ended</h1>
     <p>Total duration: <strong id="final-duration">—</strong></p>
 
     <section class="session-summary-panel hidden" data-session-summary aria-labelledby="ended-summary-title">
@@ -136,12 +65,109 @@
       <a class="btn-primary" href="/">New Session</a>
     </div>
   </div>
+
+  <main id="session-workspace" class="session-workspace">
+    <section class="session-primary" aria-label="Data entry">
+      <div class="carousel">
+        <button id="prev-target" class="carousel-arrow" type="button" aria-label="Previous target">&#8249;</button>
+        <div class="carousel-track" id="carousel-track" aria-live="polite"></div>
+        <button id="next-target" class="carousel-arrow" type="button" aria-label="Next target">&#8250;</button>
+      </div>
+      <div class="carousel-footer">
+        <div id="carousel-dots" class="target-strip" role="tablist" aria-label="Session targets"></div>
+        <button id="toggle-target-manager" class="target-manage-toggle" type="button" aria-expanded="false">
+          Manage
+        </button>
+      </div>
+
+      <section id="target-manager" class="target-manager hidden" aria-labelledby="target-manager-title">
+        <div class="target-manager-head">
+          <h2 id="target-manager-title">Session targets</h2>
+          <button id="close-target-manager" class="btn-link" type="button">Done</button>
+        </div>
+
+        <label class="field-label" for="edit-target-label">Current target label</label>
+        <div class="target-manager-row">
+          <input id="edit-target-label" class="field" type="text" maxlength="160" autocomplete="off">
+          <button id="save-target-label" class="btn-secondary" type="button">Save</button>
+        </div>
+
+        <label class="field-label" for="available-targets">Add a configured target</label>
+        <div class="target-manager-row">
+          <select id="available-targets" class="field"></select>
+          <button id="add-session-target" class="btn-secondary" type="button">Add</button>
+        </div>
+        <p id="target-manager-status" class="error" role="status"></p>
+      </section>
+
+      <section class="dashboard" aria-label="Live accuracy">
+        <div class="accuracy-big">
+          <span id="target-accuracy" class="accuracy-num">0%</span>
+          <span class="accuracy-caption">this target &middot; <span id="target-count">0 trials</span></span>
+        </div>
+        <div class="accuracy-small">
+          <span id="overall-accuracy" class="accuracy-num-sm">0%</span>
+          <span class="accuracy-caption">overall &middot; <span id="overall-count">0 trials</span></span>
+        </div>
+      </section>
+
+      <section class="cues" aria-labelledby="cue-panel-title">
+        <div class="cue-panel-head">
+          <h2 id="cue-panel-title">Cues for the next trial</h2>
+          <button id="clear-cues" class="btn-link" type="button">Independent</button>
+        </div>
+        <p class="cues-label">Assistance level — choose one</p>
+        <div id="support-levels" class="cue-toggles support-levels" role="radiogroup" aria-label="Assistance level"></div>
+        <p class="cues-label cue-type-label">Cue types — choose any</p>
+        <div id="cue-toggles" class="cue-toggles" aria-label="Cue types"></div>
+        <button id="restore-session-cues" class="btn-secondary hidden" type="button">Restore starter cues</button>
+      </section>
+
+      <section class="action-dock" aria-label="Record trial">
+        <div class="next-trial-row">
+          <p id="next-trial-summary" class="next-trial-summary">Next trial: <strong>Independent</strong></p>
+          <label class="cue-hold" for="hold-cues">
+            <input id="hold-cues" type="checkbox" checked>
+            Hold cues
+          </label>
+        </div>
+        <div id="trial-feedback" class="trial-feedback hidden" role="status" aria-live="polite">
+          <span id="trial-feedback-text"></span>
+          <button id="undo-last-trial" class="btn-link" type="button">Undo</button>
+        </div>
+        <div class="action-zone">
+          <button id="tap-correct" class="tap tap-correct" type="button">
+            <span class="tap-symbol">+</span>
+            <span class="tap-label">Correct</span>
+          </button>
+          <button id="tap-incorrect" class="tap tap-incorrect" type="button">
+            <span class="tap-symbol">&minus;</span>
+            <span class="tap-label">Incorrect</span>
+          </button>
+        </div>
+      </section>
+    </section>
+
+    <aside class="session-secondary" aria-labelledby="recent-title">
+      <section class="recent">
+        <div class="recent-head">
+          <div>
+            <h2 id="recent-title">Recent trials</h2>
+            <p class="recent-label">Latest five entries</p>
+          </div>
+          <span class="recent-help">Use Undo to correct a tap</span>
+        </div>
+        <ul id="recent-log" class="recent-log"></ul>
+      </section>
+    </aside>
+  </main>
 </div>
 </div>
-<script src="/static/js/storage.js?v=20260824a"></script>
-<script src="/static/js/storage-customizations.js?v=20260824a"></script>
-<script src="/static/js/app.js?v=20260824a"></script>
-<script src="/static/js/session-summary.js?v=20260824a"></script>
-<script src="/static/js/customization-ui.js?v=20260824a"></script>
+<script src="/static/js/storage.js?v=20260824b"></script>
+<script src="/static/js/storage-customizations.js?v=20260824b"></script>
+<script src="/static/js/app.js?v=20260824b"></script>
+<script src="/static/js/session-summary.js?v=20260824b"></script>
+<script src="/static/js/customization-ui.js?v=20260824b"></script>
 </body>
 </html>
+

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,11 +12,11 @@
 <link rel="icon" href="/static/icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <title>Data Taker — Start Session</title>
-<link rel="stylesheet" href="/static/css/style.css?v=20260824a">
-<link rel="stylesheet" href="/static/css/customization.css?v=20260824a">
+<link rel="stylesheet" href="/static/css/style.css?v=20260824b">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824b">
 </head>
 <body>
-<div class="app">
+<div class="app setup-app">
 
 <header class="topbar">
   <h1>Data Taker</h1>
@@ -33,6 +33,15 @@
       <button id="add-client" class="btn-secondary" type="button">Add</button>
     </div>
     <p id="client-error" class="error" role="alert"></p>
+  </section>
+
+  <section id="active-session-card" class="card active-session-card hidden" aria-labelledby="active-session-title">
+    <div class="active-session-copy">
+      <p class="eyebrow">Session in progress</p>
+      <h2 id="active-session-title">Resume your active session</h2>
+      <p id="active-session-meta" class="hint"></p>
+    </div>
+    <a id="resume-session" class="btn-primary active-session-link" href="/session.html">Resume session</a>
   </section>
 
   <section class="card history-card" aria-labelledby="history-title">
@@ -129,9 +138,9 @@
 </main>
 
 </div>
-<script src="/static/js/storage.js?v=20260824a"></script>
-<script src="/static/js/storage-customizations.js?v=20260824a"></script>
-<script src="/static/js/setup.js?v=20260824a"></script>
-<script src="/static/js/customization-ui.js?v=20260824a"></script>
+<script src="/static/js/storage.js?v=20260824b"></script>
+<script src="/static/js/storage-customizations.js?v=20260824b"></script>
+<script src="/static/js/setup.js?v=20260824b"></script>
+<script src="/static/js/customization-ui.js?v=20260824b"></script>
 </body>
 </html>
