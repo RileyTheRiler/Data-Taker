@@ -731,6 +731,13 @@ const DataTaker = (function () {
       hold_cues: !ui || ui.hold_cues !== false,
     };
     write(KEYS.sessionUi, safeUi);
+    const bridge = nativeBridge();
+    if (bridge && typeof bridge.updateSessionUi === "function") {
+      parseNativeResponse(bridge.updateSessionUi(JSON.stringify({
+        session_id: id,
+        active_target_id: safeUi[id].active_target_id,
+      })));
+    }
     return safeUi[id];
   }
 
@@ -849,6 +856,13 @@ const DataTaker = (function () {
     const sessions = getSessions();
     sessions.push(session);
     saveSessions(sessions);
+    try {
+      initializeNativeSession(session);
+    } catch (error) {
+      sessions.pop();
+      saveSessions(sessions);
+      throw error;
+    }
     saveRecentTargetSet(clientLabel, targetIds, targetSnapshots);
     appendActivity("create", "session", session.id);
     return sessionView(session);
@@ -858,6 +872,141 @@ const DataTaker = (function () {
     const session = findSession(getSessions(), id);
     if (!session) { throw new Error("Session not found."); }
     return sessionView(session);
+  }
+
+  // ---------- Authoritative active-session operations ----------
+
+  function nativeBridge() {
+    return typeof window !== "undefined" && window.DataTakerNative &&
+      typeof window.DataTakerNative.applyOperation === "function"
+      ? window.DataTakerNative
+      : null;
+  }
+
+  function parseNativeResponse(raw) {
+    let response = raw;
+    if (typeof response === "string") {
+      try { response = JSON.parse(response); }
+      catch (error) { throw new Error("The phone companion returned an invalid response."); }
+    }
+    if (!response || response.accepted !== true) {
+      throw new Error(response && response.error || "The phone companion did not accept this action.");
+    }
+    return response;
+  }
+
+  function replaceSession(authoritativeSession) {
+    if (!authoritativeSession || !authoritativeSession.id) {
+      throw new Error("The authoritative session response is incomplete.");
+    }
+    const sessions = getSessions();
+    const index = sessions.findIndex((session) => session.id === authoritativeSession.id);
+    if (index < 0) { sessions.push(authoritativeSession); }
+    else { sessions[index] = authoritativeSession; }
+    saveSessions(sessions);
+    return sessionView(authoritativeSession);
+  }
+
+  function initializeNativeSession(session) {
+    const bridge = nativeBridge();
+    if (!bridge || typeof bridge.initializeSession !== "function") { return null; }
+    const response = parseNativeResponse(bridge.initializeSession(JSON.stringify({
+      session: session,
+      cues: getCues().map((cue) => cue.label),
+      preferences: getPreferences(),
+      target_icons: Object.fromEntries((session.target_ids || []).map((targetId) => [
+        targetId,
+        typeof DataTaker.getTargetIcon === "function" ? DataTaker.getTargetIcon(targetId) : "🎯",
+      ])),
+    })));
+    if (response.session) { replaceSession(response.session); }
+    return response;
+  }
+
+  function reconcileNativeSession(id) {
+    const bridge = nativeBridge();
+    if (!bridge || typeof bridge.getSession !== "function") { return getSession(id); }
+    const raw = bridge.getSession(String(id));
+    if (!raw) { return getSession(id); }
+    const response = parseNativeResponse(raw);
+    return response.session ? replaceSession(response.session) : getSession(id);
+  }
+
+  function validateSessionOperation(operation) {
+    if (!operation || typeof operation !== "object") { throw new Error("A session action is required."); }
+    operation.id = String(operation.id || "").trim();
+    operation.session_id = String(operation.session_id || "").trim();
+    operation.type = String(operation.type || "").trim();
+    if (!operation.id || !operation.session_id) { throw new Error("The session action has no stable ID."); }
+    if (operation.type !== "trial" && operation.type !== "undo") {
+      throw new Error("Unsupported session action.");
+    }
+    return operation;
+  }
+
+  function applyLocalSessionOperation(operation) {
+    operation = validateSessionOperation({ ...operation });
+    const sessions = getSessions();
+    const session = findSession(sessions, operation.session_id);
+    if (!session) { throw new Error("Session not found."); }
+    if (session.end_time) { throw new Error("Session has ended; cannot change data."); }
+
+    const accepted = Array.isArray(session.accepted_operation_ids)
+      ? session.accepted_operation_ids : [];
+    if (accepted.includes(operation.id)) {
+      return { accepted: true, duplicate: true, operation_id: operation.id, session: session };
+    }
+
+    if (operation.type === "trial") {
+      const targetId = String(operation.target_id || "");
+      if (!session.target_ids.includes(targetId)) { throw new Error("Target is not part of this session."); }
+      if (operation.result !== "+" && operation.result !== "-") {
+        throw new Error("Result must be '+' or '-'.");
+      }
+      const datapointId = String(operation.datapoint_id || operation.id);
+      const existing = session.datapoints.find((datapoint) =>
+        datapoint.id === datapointId || datapoint.operation_id === operation.id);
+      if (!existing) {
+        const cueLabels = new Set(getCues().map((cue) => cue.label));
+        const prompts = (operation.prompt_levels || []).filter((prompt) => cueLabels.has(prompt));
+        session.datapoints.push({
+          id: datapointId,
+          operation_id: operation.id,
+          target_id: targetId,
+          result: operation.result,
+          prompt_levels: prompts,
+          timestamp: operation.timestamp || now(),
+          source: operation.source === "watch" ? "watch" : "phone",
+        });
+      }
+    } else {
+      const datapointId = String(operation.datapoint_id || "");
+      const before = session.datapoints.length;
+      session.datapoints = session.datapoints.filter((datapoint) => datapoint.id !== datapointId);
+      if (session.datapoints.length === before) { throw new Error("Trial not found."); }
+    }
+
+    accepted.push(operation.id);
+    session.accepted_operation_ids = accepted.slice(-256);
+    session.last_operation_id = operation.id;
+    saveSessions(sessions);
+    return { accepted: true, duplicate: false, operation_id: operation.id, session: session };
+  }
+
+  function applySessionOperation(operation) {
+    operation = validateSessionOperation({ ...operation });
+    const bridge = nativeBridge();
+    const response = bridge
+      ? parseNativeResponse(bridge.applyOperation(JSON.stringify(operation)))
+      : applyLocalSessionOperation(operation);
+    const view = replaceSession(response.session);
+    if (!response.duplicate) {
+      const entityId = operation.type === "trial"
+        ? String(operation.datapoint_id || operation.id)
+        : String(operation.datapoint_id || operation.id);
+      appendActivity(operation.type === "trial" ? "create" : "delete", "datapoint", entityId);
+    }
+    return { ...response, session: view };
   }
 
   function addSessionTarget(id, targetId) {
@@ -909,11 +1058,24 @@ const DataTaker = (function () {
 
   function endSession(id) {
     const sessions = getSessions();
-    const session = findSession(sessions, id);
+    let session = findSession(sessions, id);
     if (!session) { throw new Error("Session not found."); }
     if (!session.end_time) {
-      session.end_time = now();
-      saveSessions(sessions);
+      const endTime = now();
+      const bridge = nativeBridge();
+      if (bridge && typeof bridge.endSession === "function") {
+        const response = parseNativeResponse(bridge.endSession(JSON.stringify({
+          session_id: id,
+          end_time: endTime,
+        })));
+        if (response.session) {
+          replaceSession(response.session);
+          session = response.session;
+        }
+      } else {
+        session.end_time = endTime;
+        saveSessions(sessions);
+      }
       appendActivity("modify", "session", id);
     }
     clearSessionUi(id);
@@ -921,38 +1083,29 @@ const DataTaker = (function () {
   }
 
   function addDatapoint(id, targetId, result, promptLevels) {
-    const sessions = getSessions();
-    const session = findSession(sessions, id);
-    if (!session) { throw new Error("Session not found."); }
-    if (session.end_time) { throw new Error("Session has ended; cannot add data."); }
-    if (!session.target_ids.includes(targetId)) { throw new Error("Target is not part of this session."); }
-    if (result !== "+" && result !== "-") { throw new Error("Result must be '+' or '-'."); }
-
-    const cueLabels = new Set(getCues().map((cue) => cue.label));
-    const prompts = (promptLevels || []).filter((prompt) => cueLabels.has(prompt));
-    const datapoint = {
-      id: uid(),
+    const operationId = uid();
+    return applySessionOperation({
+      id: operationId,
+      session_id: id,
+      type: "trial",
+      datapoint_id: operationId,
       target_id: targetId,
       result: result,
-      prompt_levels: prompts,
+      prompt_levels: promptLevels || [],
       timestamp: now(),
-    };
-    session.datapoints.push(datapoint);
-    saveSessions(sessions);
-    appendActivity("create", "datapoint", datapoint.id);
-    return sessionView(session);
+      source: "phone",
+    }).session;
   }
 
   function deleteDatapoint(id, datapointId) {
-    const sessions = getSessions();
-    const session = findSession(sessions, id);
-    if (!session) { throw new Error("Session not found."); }
-    const before = session.datapoints.length;
-    session.datapoints = session.datapoints.filter((dp) => dp.id !== datapointId);
-    if (session.datapoints.length === before) { throw new Error("Trial not found."); }
-    saveSessions(sessions);
-    appendActivity("delete", "datapoint", datapointId);
-    return sessionView(session);
+    return applySessionOperation({
+      id: uid(),
+      session_id: id,
+      type: "undo",
+      datapoint_id: datapointId,
+      timestamp: now(),
+      source: "phone",
+    }).session;
   }
 
   // ---------- Backup / restore ----------
@@ -979,6 +1132,10 @@ const DataTaker = (function () {
         ? preferences.color_theme : "teal",
     };
     write(KEYS.preferences, value);
+    const bridge = nativeBridge();
+    if (bridge && typeof bridge.updatePreferences === "function") {
+      parseNativeResponse(bridge.updatePreferences(JSON.stringify(value)));
+    }
     return value;
   }
 
@@ -1065,6 +1222,7 @@ const DataTaker = (function () {
     getRepeatLastSession, getRecentTargetSets,
     getSessionUi, saveSessionUi, clearSessionUi,
     addSessionTarget, renameSessionTarget, addDatapoint, deleteDatapoint,
+    applySessionOperation, reconcileNativeSession,
     getPreferences, savePreferences, getLastBackupDate, markBackupSuccessful,
     validateImport, exportAll, importAll,
   };

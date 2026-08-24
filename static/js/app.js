@@ -537,6 +537,25 @@ document.getElementById("add-session-target").addEventListener("click", addTarge
 
 window.addEventListener("pagehide", persistSessionUi);
 
+window.DataTakerWatchSync = function () {
+  if (!sessionId || !state || state.end_time ||
+      typeof DataTaker.reconcileNativeSession !== "function") { return; }
+  try {
+    const updated = DataTaker.reconcileNativeSession(sessionId);
+    if (updated && updated.last_operation_id !== state.last_operation_id) {
+      applyState(updated);
+    }
+  } catch (error) {
+    document.getElementById("trial-feedback-text").textContent =
+      "Watch sync needs attention: " + error.message;
+    document.getElementById("trial-feedback").classList.remove("hidden");
+  }
+};
+
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden) { window.DataTakerWatchSync(); }
+});
+
 function init() {
   if (!sessionId) {
     window.location.href = "/";
@@ -544,7 +563,9 @@ function init() {
   }
 
   try {
-    state = DataTaker.getSession(sessionId);
+    state = typeof DataTaker.reconcileNativeSession === "function"
+      ? DataTaker.reconcileNativeSession(sessionId)
+      : DataTaker.getSession(sessionId);
     const savedUi = DataTaker.getSessionUi(sessionId);
     const savedIndex = state.targets.findIndex(function (target) {
       return target.id === savedUi.active_target_id;

@@ -173,6 +173,19 @@ objects are normalized in place so older backups gain archive/order defaults
 without changing existing IDs. Current exports use backup schema version 3;
 older backups remain importable.
 
+## Galaxy Watch7 support
+
+The `android/` project contains the first native phone/Wear OS vertical slice
+for a synchronized Galaxy Watch7 controller. It uses a phone-owned, idempotent
+active-session ledger and the Wearable Data Layer; it does not open the PWA
+independently on the watch or imply that browser storage is shared between
+devices.
+
+Read [the smartwatch feasibility, synchronization contract, device matrix,
+setup guide, and validation checklist](docs/SMARTWATCH_SUPPORT.md). The native
+slice remains pre-release until the official emulator workflow and a real
+Galaxy Watch7 test pass.
+
 ## Future work (deferred)
 
 These were part of the original master plan and are intentionally **out of scope**

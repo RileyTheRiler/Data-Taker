@@ -815,12 +815,16 @@ function applyPreferences() {
 // ---------- Backup and import ----------
 
 function downloadBackup(data, prefix) {
+  const filename = prefix + "-" + new Date().toISOString().slice(0, 10) + ".json";
+  if (window.DataTakerNative && typeof window.DataTakerNative.saveBackup === "function") {
+    return Boolean(window.DataTakerNative.saveBackup(filename, JSON.stringify(data, null, 2)));
+  }
   if (!window.Blob || !window.URL || !URL.createObjectURL) { return false; }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = prefix + "-" + new Date().toISOString().slice(0, 10) + ".json";
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
