@@ -54,6 +54,9 @@ test("applies appearance consistently to live, review, and progress screens", as
   await page.goto("/");
   const sessionId = await page.evaluate(() => {
     DataTaker.savePreferences({ appearance_mode: "dark", color_theme: "rose" });
+    const prior = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+    DataTaker.addDatapoint(prior.id, "tgt-r-cvc", "-", []);
+    DataTaker.endSession(prior.id);
     const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
     DataTaker.addDatapoint(session.id, "tgt-r-cvc", "+", []);
     DataTaker.endSession(session.id);
