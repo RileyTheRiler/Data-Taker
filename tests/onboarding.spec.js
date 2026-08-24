@@ -44,6 +44,7 @@ test("adds only the selected editable template and reveals session setup", async
 test("keeps the interactive example out of stored sessions and progress", async ({ page }) => {
   await openCleanInstall(page);
 
+  const sessionsBefore = await page.evaluate(() => localStorage.getItem("dataTaker.sessions.v2"));
   await page.getByRole("button", { name: "Try an example session" }).click();
   await page.getByRole("button", { name: "Visual", exact: true }).click();
   await page.getByRole("button", { name: "Record correct" }).click();
@@ -52,7 +53,7 @@ test("keeps the interactive example out of stored sessions and progress", async 
   await expect(page.locator("#demo-accuracy")).toHaveText("50%");
   await expect(page.locator("#demo-trial-count")).toHaveText("2 trials");
   await expect(page.locator("#demo-recent li")).toHaveCount(2);
-  expect(await page.evaluate(() => localStorage.getItem("dataTaker.sessions.v2"))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem("dataTaker.sessions.v2"))).toBe(sessionsBefore);
   expect(await page.evaluate(() => DataTaker.getPastSessions("Example Client"))).toEqual([]);
 });
 
