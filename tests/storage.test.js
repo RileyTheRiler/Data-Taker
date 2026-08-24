@@ -138,6 +138,57 @@ test("recovers active sessions and persists ephemeral session controls", () => {
   assert.deepEqual(JSON.parse(values.get("dataTaker.sessionUi.v1")), {});
 });
 
+test("accepts stable session operations idempotently", () => {
+  const { DataTaker } = loadDataTaker();
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  const operation = {
+    id: "watch-operation-1",
+    session_id: session.id,
+    type: "trial",
+    datapoint_id: "watch-operation-1",
+    target_id: "tgt-r-cvc",
+    result: "+",
+    prompt_levels: ["Visual"],
+    timestamp: "2026-08-24T12:00:00.000Z",
+    source: "watch",
+  };
+
+  const first = DataTaker.applySessionOperation(operation);
+  const retry = DataTaker.applySessionOperation(operation);
+
+  assert.equal(first.accepted, true);
+  assert.equal(first.duplicate, false);
+  assert.equal(retry.duplicate, true);
+  assert.equal(retry.session.datapoints.length, 1);
+  assert.equal(retry.session.datapoints[0].operation_id, operation.id);
+  assert.equal(retry.session.datapoints[0].source, "watch");
+});
+
+test("preserves committed order when a delayed operation is retried", () => {
+  const { DataTaker } = loadDataTaker();
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  const operation = (id, result) => ({
+    id,
+    session_id: session.id,
+    type: "trial",
+    datapoint_id: id,
+    target_id: "tgt-r-cvc",
+    result,
+    prompt_levels: [],
+    timestamp: "2026-08-24T12:00:00.000Z",
+    source: "watch",
+  });
+
+  DataTaker.applySessionOperation(operation("operation-1", "+"));
+  DataTaker.applySessionOperation(operation("operation-2", "-"));
+  DataTaker.applySessionOperation(operation("operation-1", "+"));
+
+  assert.deepEqual(
+    Array.from(DataTaker.getSession(session.id).datapoints, (point) => point.id),
+    ["operation-1", "operation-2"]
+  );
+});
+
 test("target snapshots keep history readable after its goal is deleted", () => {
   const { DataTaker } = loadDataTaker();
   const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
