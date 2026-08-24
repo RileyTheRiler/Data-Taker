@@ -126,7 +126,13 @@
   font-size: 12px;
 }
 .target-trend-row:last-child { border-bottom: none; }
-.target-trend-label { min-width: 0; overflow-wrap: anywhere; }
+.target-trend-label {
+  min-width: 0;
+  color: var(--teal-dark);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-underline-offset: 2px;
+}
 .target-trend-row strong {
   color: var(--teal-dark);
   white-space: nowrap;

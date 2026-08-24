@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Data Taker">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/static/icons/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<title>Data Taker — Target Progress</title>
+<link rel="stylesheet" href="/static/css/style.css?v=20260824d">
+<link rel="stylesheet" href="/static/css/session-summary.css?v=20260824d">
+<link rel="stylesheet" href="/static/css/progress.css?v=20260824d">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824d">
+</head>
+<body>
+<div class="app progress-app">
+  <header class="topbar">
+    <a class="exit progress-back" href="/#sessions">&#8592; Sessions</a>
+    <h1>Target progress</h1>
+    <p class="subtitle">Accuracy for one client and one stable target across ended sessions</p>
+  </header>
+
+  <main class="progress-main">
+    <section class="card progress-controls" aria-labelledby="progress-controls-title">
+      <h2 id="progress-controls-title">Choose what to graph</h2>
+      <div class="progress-filters">
+        <label for="progress-client">Client
+          <select id="progress-client" class="field"></select>
+        </label>
+        <label for="progress-target">Target
+          <select id="progress-target" class="field"></select>
+        </label>
+      </div>
+      <p class="hint">Only ended sessions are included. Sessions with no trials for the target remain in the table but are not plotted as 0%.</p>
+    </section>
+
+    <section id="progress-result" class="card hidden" aria-labelledby="progress-title">
+      <p id="progress-client-label" class="eyebrow"></p>
+      <h2 id="progress-title" tabindex="-1"></h2>
+      <p id="progress-path" class="progress-path"></p>
+
+      <div class="summary-metrics progress-metrics">
+        <div class="summary-metric"><strong id="progress-session-count">0</strong><span>Sessions with data</span></div>
+        <div class="summary-metric"><strong id="progress-latest">—</strong><span>Latest accuracy</span></div>
+        <div class="summary-metric"><strong id="progress-trials">0</strong><span>Total trials</span></div>
+        <div class="summary-metric"><strong id="progress-change">—</strong><span>Change from first</span></div>
+      </div>
+
+      <div class="summary-section">
+        <h3 class="summary-subheading">Accuracy by session</h3>
+        <div id="target-progress-chart"></div>
+      </div>
+
+      <div class="summary-section">
+        <h3 class="summary-subheading">Session data</h3>
+        <div class="progress-table-wrap">
+          <table class="progress-table">
+            <thead><tr><th scope="col">Date</th><th scope="col">Correct</th><th scope="col">Trials</th><th scope="col">Accuracy</th><th scope="col"><span class="visually-hidden-text">Review</span></th></tr></thead>
+            <tbody id="progress-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="progress-empty" class="card" role="status">
+      <h2 id="progress-empty-title">No target history yet</h2>
+      <p id="progress-empty-message" class="hint">End a session with recorded trials to see target progress.</p>
+      <a class="btn-primary progress-start-link" href="/">Start a session</a>
+    </section>
+  </main>
+</div>
+<script src="/static/js/storage.js?v=20260824d"></script>
+<script src="/static/js/storage-customizations.js?v=20260824d"></script>
+<script src="/static/js/progress.js?v=20260824d"></script>
+<script src="/static/js/customization-ui.js?v=20260824d"></script>
+</body>
+</html>

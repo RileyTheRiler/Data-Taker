@@ -14,6 +14,18 @@ function targetDisplay(target) {
     : target.label;
 }
 function normalized(value) { return String(value || "").trim().toLowerCase(); }
+function progressUrl(clientLabel, targetId) {
+  const params = new URLSearchParams();
+  if (clientLabel && clientLabel !== "all") { params.set("client", clientLabel); }
+  if (targetId) { params.set("target", targetId); }
+  const query = params.toString();
+  return "/progress.html" + (query ? "?" + query : "");
+}
+
+function syncProgressLinks() {
+  byId("selected-client-progress").href = progressUrl(byId("client-select").value);
+  byId("client-progress-link").href = progressUrl(byId("history-client-filter").value);
+}
 
 // ---------- Accessible home sections ----------
 
@@ -80,6 +92,7 @@ function confirmAction(title, message, confirmLabel, danger) {
   const accept = byId("confirm-dialog-accept");
   accept.textContent = confirmLabel || "Confirm";
   accept.classList.toggle("danger-confirm", Boolean(danger));
+  dialog.returnValue = "";
   return new Promise(function (resolve) {
     function closed() {
       dialog.removeEventListener("close", closed);
@@ -123,6 +136,7 @@ function loadClients() {
   filter.value = Array.from(filter.options).some((option) => option.value === filterPrevious)
     ? filterPrevious
     : "all";
+  syncProgressLinks();
 }
 
 function addClient() {
@@ -166,6 +180,7 @@ function clientChanged() {
   if (client && Array.from(byId("history-client-filter").options).some((option) => option.value === client)) {
     byId("history-client-filter").value = client;
   }
+  syncProgressLinks();
   loadRepeatSession();
   loadRecentTargetSets();
   loadPastSessions();
@@ -388,9 +403,7 @@ function historySessions() {
   if (client && client !== "all") {
     sessions = DataTaker.getPastSessions(client);
   } else {
-    sessions = DataTaker.getSessions()
-      .filter((session) => session.end_time)
-      .map((session) => DataTaker.getSession(session.id));
+    sessions = DataTaker.getEndedSessions();
   }
   const query = normalized(byId("history-search").value);
   if (query) {
@@ -436,9 +449,10 @@ function loadPastSessions() {
       const row = document.createElement("li");
       const info = document.createElement("span");
       info.className = "history-target-info";
-      const name = document.createElement("span");
+      const name = document.createElement("a");
       name.className = "history-target-name";
       name.textContent = targetDisplay(target);
+      name.href = progressUrl(session.client_label, target.id);
       const path = document.createElement("span");
       path.className = "history-target-path";
       path.textContent = [target.domain, target.short_term_goal].filter(Boolean).join(" · ");
@@ -461,7 +475,11 @@ function loadPastSessions() {
     objective.className = "history-review-link";
     objective.href = "/review.html?id=" + encodeURIComponent(session.id) + "#objective";
     objective.textContent = "Objective";
-    actions.append(review, objective);
+    const progress = document.createElement("a");
+    progress.className = "history-review-link";
+    progress.href = progressUrl(session.client_label, session.targets[0] && session.targets[0].id);
+    progress.textContent = "Progress";
+    actions.append(review, progress, objective);
     item.appendChild(actions);
     list.appendChild(item);
   });
@@ -798,7 +816,10 @@ function downloadBackup(data, prefix) {
 }
 
 function exportData() {
-  downloadBackup(DataTaker.exportAll(), "data-taker-backup");
+  if (!downloadBackup(DataTaker.exportAll(), "data-taker-backup")) {
+    show("backup-status", "Export failed: this browser cannot download files. No backup was created.");
+    return;
+  }
   DataTaker.markBackupSuccessful();
   show("backup-status", "Backup downloaded.");
   loadSettings();
@@ -872,7 +893,10 @@ byId("clear-targets").addEventListener("click", function () {
   renderSelectedTray();
 });
 byId("start-session").addEventListener("click", startSession);
-byId("history-client-filter").addEventListener("change", loadPastSessions);
+byId("history-client-filter").addEventListener("change", function () {
+  syncProgressLinks();
+  loadPastSessions();
+});
 byId("history-sort").addEventListener("change", loadPastSessions);
 byId("history-search").addEventListener("input", loadPastSessions);
 byId("goal-search").addEventListener("input", renderGoalManager);

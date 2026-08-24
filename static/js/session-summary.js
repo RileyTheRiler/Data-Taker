@@ -169,9 +169,11 @@ const SessionSummary = (function () {
 
       const row = document.createElement("div");
       row.className = "target-trend-row";
-      const label = document.createElement("span");
+      const label = document.createElement("a");
       label.className = "target-trend-label";
       label.textContent = target.label;
+      const params = new URLSearchParams({ client: currentSession.client_label, target: target.id });
+      label.href = "/progress.html?" + params.toString();
       const metric = document.createElement("strong");
       if (historic.length < 2) {
         metric.textContent = "Current: " + target.percent + "%";

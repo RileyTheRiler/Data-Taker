@@ -12,8 +12,8 @@
 <link rel="icon" href="/static/icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <title>Data Taker</title>
-<link rel="stylesheet" href="/static/css/style.css?v=20260824c">
-<link rel="stylesheet" href="/static/css/customization.css?v=20260824c">
+<link rel="stylesheet" href="/static/css/style.css?v=20260824d">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824d">
 </head>
 <body>
 <div class="app setup-app">
@@ -55,6 +55,7 @@
         <p class="hint">Use an anonymized label only. Never enter a name or identifying information.</p>
         <label class="field-label" for="client-select">Client label</label>
         <select id="client-select" class="field"></select>
+        <a id="selected-client-progress" class="contextual-progress-link" href="/progress.html">View target progress</a>
         <div class="inline-add">
           <input id="new-client" class="field" type="text" placeholder="New label, e.g. Client C" autocomplete="off">
           <button id="add-client" class="btn-secondary" type="button">Add</button>
@@ -109,7 +110,10 @@
       <section class="card history-card" aria-labelledby="history-title">
         <div class="card-head">
           <h3 id="history-title">Past sessions</h3>
-          <span id="past-session-count" class="history-count"></span>
+          <div class="history-head-actions">
+            <span id="past-session-count" class="history-count"></span>
+            <a id="client-progress-link" class="contextual-progress-link" href="/progress.html">Target progress</a>
+          </div>
         </div>
         <div class="history-filters">
           <label>Client
@@ -192,7 +196,7 @@
           <button id="export-data" class="btn-secondary" type="button">Export backup</button>
           <label class="btn-secondary file-btn">
             Choose backup to import
-            <input id="import-data" type="file" accept="application/json" hidden>
+            <input id="import-data" class="visually-hidden-input" type="file" accept="application/json">
           </label>
         </div>
         <p id="last-backup-date" class="hint"></p>
@@ -233,9 +237,9 @@
   </form>
 </dialog>
 
-<script src="/static/js/storage.js?v=20260824c"></script>
-<script src="/static/js/storage-customizations.js?v=20260824c"></script>
-<script src="/static/js/setup.js?v=20260824c"></script>
-<script src="/static/js/customization-ui.js?v=20260824c"></script>
+<script src="/static/js/storage.js?v=20260824d"></script>
+<script src="/static/js/storage-customizations.js?v=20260824d"></script>
+<script src="/static/js/setup.js?v=20260824d"></script>
+<script src="/static/js/customization-ui.js?v=20260824d"></script>
 </body>
 </html>

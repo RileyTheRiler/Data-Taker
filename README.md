@@ -39,6 +39,12 @@ logging.
   overall accuracy, expandable per-target results, and direct Review/Objective
   actions. Target labels and goal paths are snapshotted so later goal edits do
   not rewrite history.
+- **Per-target progress** — open a target directly from setup, session history,
+  an ended session, or its review page. The client-scoped progress screen plots
+  that stable target's accuracy across ended sessions, shows the current label
+  and goal path, summarizes change and total trials, and provides an exact
+  session table with review links. The dependency-free SVG remains usable
+  offline and does not treat a session with no target trials as 0% accuracy.
 - **Fast setup** — repeat the selected client's last session or reuse recent
   target sets by stable target ID, search configured targets and goal paths,
   then review an icon-labeled selected-target tray before starting. Deleted and
@@ -82,6 +88,7 @@ that one module and the fetch-style calls made from `setup.js` / `app.js`.
 index.html              # Start / Sessions / Goals / Settings workspace
 session.html            # Live session screen
 review.html             # Ended-session review and Objective draft export
+progress.html           # Client/target longitudinal accuracy explorer
 manifest.json           # PWA manifest (Add to Home Screen on iPad/iPhone)
 vercel.json             # Static hosting config (clean URLs, cache headers)
 static/css/style.css    # Mobile-first styling
@@ -89,6 +96,7 @@ static/js/storage.js    # localStorage data layer (goals/clients/sessions/backup
 static/js/setup.js      # Home page logic
 static/js/app.js        # Live session screen logic
 static/js/review.js     # Review screen and text/PDF export logic
+static/js/progress.js   # Per-target history chart and exact data table
 static/icons/           # App icons (favicon, apple-touch-icon, PWA icons)
 ```
 
@@ -124,8 +132,8 @@ Home Screen** to install it as a full-screen app (per `manifest.json`).
 2. **Session:** the timer runs automatically. Arm cueing chips, then tap **+** or
    **−**. Swipe the carousel (or use the arrows) to switch targets. Watch the live
    accuracy and the last-5 log; tap **×** to undo a mis-tap.
-3. **End** the session to see the total duration for hour logging, then open the
-   review screen to edit and export an Objective draft.
+3. **End** the session to see its summary, open target progress, or edit and
+   export an Objective draft from the review screen.
 
 ## Data model (localStorage keys)
 
