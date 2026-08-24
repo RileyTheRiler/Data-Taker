@@ -110,6 +110,14 @@ The Data Layer may use Bluetooth, Wi-Fi, or Google's end-to-end encrypted cloud 
 
 The `Smartwatch` GitHub workflow builds the phone and watch APKs, runs native authority and persistent-queue tests, launches official API 34 Wear OS 5 emulators using `wearos_small_round` and `wearos_square`, and uploads screenshots as workflow artifacts. Queue tests cover restart persistence, action order, delayed acknowledgements, and unknown acknowledgements; authority tests cover duplicate and delayed retries.
 
+## Emulator screenshots
+
+These screenshots were captured by the official Wear OS 5/API 34 emulator jobs from the same native watch APK. Client labels are not present in the watch state or images.
+
+| Small round | Small rectangular |
+|---|---|
+| ![Data Taker on the small round Wear OS profile](watch-screenshots/wearos_small_round.png) | ![Data Taker on the small rectangular Wear OS profile](watch-screenshots/wearos_square.png) |
+
 ## Real Galaxy Watch7 checklist
 
 - Record the watch model number, Wear OS version, One UI Watch version, phone model, and Android version.
