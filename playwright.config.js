@@ -6,6 +6,7 @@ module.exports = defineConfig({
   reporter: "line",
   use: {
     baseURL: "http://127.0.0.1:4173",
+    storageState: "tests/existing-install-state.json",
     trace: "retain-on-failure",
   },
   webServer: {
