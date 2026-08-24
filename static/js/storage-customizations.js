@@ -5,6 +5,7 @@
 (function () {
   const TARGET_ICON_KEY = "dataTaker.targetIcons.v1";
   const STARTER_CUES = ["Max", "Mod", "Min", "Visual", "Verbal", "Gestural", "Model", "Tactile"];
+  const LEGACY_DEFAULT_CUES = ["Max", "Mod", "Min", "Visual", "Verbal", "Tactile"];
 
   function readIcons() {
     try {
@@ -43,6 +44,13 @@
     return value.slice(0, 16);
   }
 
+  function sameCueSet(cues, labels) {
+    if (cues.length !== labels.length) { return false; }
+    const actual = cues.map(function (cue) { return cue.label.toLowerCase(); }).sort();
+    const expected = labels.map(function (label) { return label.toLowerCase(); }).sort();
+    return actual.every(function (label, index) { return label === expected[index]; });
+  }
+
   DataTaker.getStarterCueLabels = function () {
     return STARTER_CUES.slice();
   };
@@ -58,6 +66,12 @@
     });
     return DataTaker.getCues();
   };
+
+  // Upgrade only the untouched legacy template. Customized cue lists are left
+  // exactly as the clinician configured them.
+  if (sameCueSet(DataTaker.getCues(), LEGACY_DEFAULT_CUES)) {
+    DataTaker.restoreStarterCues();
+  }
 
   DataTaker.getTargetIcon = function (targetOrId) {
     const target = typeof targetOrId === "object" && targetOrId
