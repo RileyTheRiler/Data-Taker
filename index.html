@@ -11,136 +11,231 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/static/icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
-<title>Data Taker — Start Session</title>
-<link rel="stylesheet" href="/static/css/style.css?v=20260824b">
-<link rel="stylesheet" href="/static/css/customization.css?v=20260824b">
+<title>Data Taker</title>
+<link rel="stylesheet" href="/static/css/style.css?v=20260824c">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824c">
 </head>
 <body>
 <div class="app setup-app">
+  <header class="topbar">
+    <h1>Data Taker</h1>
+    <p class="subtitle">SLP trial-by-trial data collection · practice tool</p>
+  </header>
 
-<header class="topbar">
-  <h1>Data Taker</h1>
-  <p class="subtitle">SLP trial-by-trial data collection &middot; practice tool</p>
-</header>
+  <nav class="home-tabs" role="tablist" aria-label="Data Taker sections">
+    <button id="tab-start" class="home-tab" type="button" role="tab" aria-controls="panel-start" data-section="start">
+      <span aria-hidden="true">▶</span><span>Start</span>
+    </button>
+    <button id="tab-sessions" class="home-tab" type="button" role="tab" aria-controls="panel-sessions" data-section="sessions">
+      <span aria-hidden="true">◷</span><span>Sessions</span>
+    </button>
+    <button id="toggle-edit-goals" class="home-tab" type="button" role="tab" aria-controls="panel-goals" data-section="goals">
+      <span aria-hidden="true">◎</span><span>Goals</span>
+    </button>
+    <button id="tab-settings" class="home-tab" type="button" role="tab" aria-controls="panel-settings" data-section="settings">
+      <span aria-hidden="true">⚙</span><span>Settings</span>
+    </button>
+  </nav>
 
-<main class="setup">
-  <section class="card">
-    <h2>1. Choose a client</h2>
-    <p class="hint">Anonymized labels only — never enter a real name or any identifying information.</p>
-    <select id="client-select" class="field"></select>
-    <div class="inline-add">
-      <input id="new-client" class="field" type="text" placeholder="New label, e.g. Client C" autocomplete="off">
-      <button id="add-client" class="btn-secondary" type="button">Add</button>
-    </div>
-    <p id="client-error" class="error" role="alert"></p>
-  </section>
+  <main class="setup">
+    <section id="panel-start" class="home-panel" role="tabpanel" aria-labelledby="tab-start" data-panel="start">
+      <h2 class="panel-title" tabindex="-1">Start</h2>
 
-  <section id="active-session-card" class="card active-session-card hidden" aria-labelledby="active-session-title">
-    <div class="active-session-copy">
-      <p class="eyebrow">Session in progress</p>
-      <h2 id="active-session-title">Resume your active session</h2>
-      <p id="active-session-meta" class="hint"></p>
-    </div>
-    <a id="resume-session" class="btn-primary active-session-link" href="/session.html">Resume session</a>
-  </section>
+      <section id="active-session-card" class="card active-session-card hidden" aria-labelledby="active-session-title">
+        <div class="active-session-copy">
+          <p class="eyebrow">Session in progress</p>
+          <h3 id="active-session-title">Resume your active session</h3>
+          <p id="active-session-meta" class="hint"></p>
+        </div>
+        <a id="resume-session" class="btn-primary active-session-link" href="/session.html">Resume</a>
+      </section>
 
-  <section class="card history-card" aria-labelledby="history-title">
-    <div class="card-head">
-      <h2 id="history-title">Past sessions</h2>
-      <span id="past-session-count" class="history-count"></span>
-    </div>
-    <p class="hint">Ended sessions for the selected client, newest first.</p>
-    <div id="past-sessions" class="session-history" aria-live="polite"></div>
-  </section>
+      <section class="card" aria-labelledby="client-title">
+        <h3 id="client-title">Client</h3>
+        <p class="hint">Use an anonymized label only. Never enter a name or identifying information.</p>
+        <label class="field-label" for="client-select">Client label</label>
+        <select id="client-select" class="field"></select>
+        <div class="inline-add">
+          <input id="new-client" class="field" type="text" placeholder="New label, e.g. Client C" autocomplete="off">
+          <button id="add-client" class="btn-secondary" type="button">Add</button>
+        </div>
+        <p id="client-error" class="error" role="alert"></p>
+      </section>
 
-  <section class="card">
-    <div class="card-head">
-      <h2>2. Select today's targets</h2>
-      <button id="toggle-edit-goals" class="btn-link" type="button">Manage goals</button>
-    </div>
-    <p class="hint">Tap targets to add them to the session's swipeable carousel.</p>
-    <div id="goal-tree" class="goal-tree"></div>
-    <div id="goal-editor" class="goal-editor hidden">
-      <p class="hint">Add your own domains, goals, and targets. Everything here (including the
-        starter examples) can be edited or removed — it's stored only on this device. Tap the icon
-        beside a target to replace it with any emoji or short icon you prefer.</p>
+      <section id="repeat-session-card" class="card compact-card hidden" aria-labelledby="repeat-title">
+        <div class="card-head">
+          <div>
+            <h3 id="repeat-title">Repeat last session</h3>
+            <p id="repeat-session-meta" class="hint"></p>
+          </div>
+          <button id="repeat-last-session" class="btn-secondary" type="button">Select targets</button>
+        </div>
+        <p id="repeat-session-status" class="inline-status" role="status" aria-live="polite"></p>
+      </section>
 
-      <div class="editor-row">
-        <input id="new-domain-name" class="field" type="text" placeholder="New domain, e.g. Voice" autocomplete="off">
-        <button id="add-domain" class="btn-secondary" type="button">Add domain</button>
-      </div>
+      <section id="recent-sets-card" class="card compact-card hidden" aria-labelledby="recent-sets-title">
+        <h3 id="recent-sets-title">Recent target sets</h3>
+        <div id="recent-target-sets" class="recent-sets"></div>
+      </section>
 
-      <div class="editor-row">
-        <select id="ltg-domain-select" class="field"></select>
-        <input id="new-ltg-label" class="field" type="text" placeholder="New long-term goal" autocomplete="off">
-        <button id="add-ltg" class="btn-secondary" type="button">Add LTG</button>
-      </div>
+      <section class="card" aria-labelledby="target-selection-title">
+        <div class="card-head">
+          <div>
+            <h3 id="target-selection-title">Choose targets</h3>
+            <p id="available-target-count" class="hint"></p>
+          </div>
+          <span id="selected-target-count" class="selection-count" aria-live="polite">0 selected</span>
+        </div>
+        <label class="field-label" for="target-search">Search targets or goal paths</label>
+        <input id="target-search" class="field" type="search" placeholder="Search targets" autocomplete="off">
+        <div id="goal-tree" class="goal-tree selection-tree"></div>
 
-      <div class="editor-row">
-        <select id="stg-domain-select" class="field"></select>
-        <select id="stg-ltg-select" class="field"></select>
-        <input id="new-stg-label" class="field" type="text" placeholder="New short-term goal" autocomplete="off">
-        <button id="add-stg" class="btn-secondary" type="button">Add STG</button>
-      </div>
+        <div class="selected-tray-head">
+          <h4>Selected targets</h4>
+          <button id="clear-targets" class="btn-link" type="button">Clear all</button>
+        </div>
+        <div id="selected-target-tray" class="selected-target-tray" aria-live="polite"></div>
+      </section>
 
-      <div class="editor-row">
-        <select id="target-domain-select" class="field"></select>
-        <select id="target-ltg-select" class="field"></select>
-        <select id="target-stg-select" class="field"></select>
-        <input id="new-target-label" class="field" type="text" placeholder="New target" autocomplete="off">
-        <button id="add-target" class="btn-secondary" type="button">Add target</button>
-      </div>
-      <p id="goal-editor-error" class="error" role="alert"></p>
-    </div>
-  </section>
+      <section class="card start-card">
+        <p id="selection-summary" class="hint">No targets selected yet.</p>
+        <button id="start-session" class="btn-primary" type="button" disabled>Start Session</button>
+        <p id="start-error" class="error" role="alert"></p>
+      </section>
+    </section>
 
-  <section class="card start-card">
-    <h2>3. Start</h2>
-    <p id="selection-summary" class="hint">No targets selected yet.</p>
-    <button id="start-session" class="btn-primary" type="button" disabled>Start Session</button>
-    <p id="start-error" class="error" role="alert"></p>
-  </section>
+    <section id="panel-sessions" class="home-panel hidden" role="tabpanel" aria-labelledby="tab-sessions" data-panel="sessions">
+      <h2 class="panel-title" tabindex="-1">Sessions</h2>
+      <section class="card history-card" aria-labelledby="history-title">
+        <div class="card-head">
+          <h3 id="history-title">Past sessions</h3>
+          <span id="past-session-count" class="history-count"></span>
+        </div>
+        <div class="history-filters">
+          <label>Client
+            <select id="history-client-filter" class="field"></select>
+          </label>
+          <label>Sort
+            <select id="history-sort" class="field">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+          <label class="history-search-label">Search
+            <input id="history-search" class="field" type="search" placeholder="Date or target" autocomplete="off">
+          </label>
+        </div>
+        <div id="past-sessions" class="session-history" aria-live="polite"></div>
+      </section>
+    </section>
 
-  <section class="card cue-manager-card">
-    <div class="card-head">
-      <h2>Cue types</h2>
-      <button id="toggle-edit-cues" class="btn-link" type="button" aria-expanded="false">Manage cues</button>
-    </div>
-    <p id="cue-summary" class="hint"></p>
-    <div id="cue-editor" class="cue-editor hidden">
-      <p class="hint">Changes apply to future trials. Previously recorded cue labels stay in session history.</p>
-      <div class="cue-template-actions">
-        <button id="restore-starter-cues" class="btn-secondary" type="button">Restore starter cues</button>
-        <p class="cue-template-note">Starter set: Max, Mod, Min, Visual, Verbal, Gestural, Model, and Tactile. You can rename or delete any of them.</p>
-      </div>
-      <div id="cue-editor-list" class="cue-editor-list"></div>
-      <div class="inline-add cue-add-row">
-        <input id="new-cue-label" class="field" type="text" maxlength="40" placeholder="New cue type" autocomplete="off">
-        <button id="add-cue" class="btn-secondary" type="button">Add</button>
-      </div>
-      <p id="cue-editor-error" class="error" role="alert"></p>
-    </div>
-  </section>
+    <section id="panel-goals" class="home-panel hidden" role="tabpanel" aria-labelledby="toggle-edit-goals" data-panel="goals">
+      <h2 class="panel-title" tabindex="-1">Goals</h2>
+      <section class="card" aria-labelledby="goal-manager-title">
+        <h3 id="goal-manager-title">Goal library</h3>
+        <p class="hint">Rename, organize, archive, or restore items without changing stable IDs or completed-session snapshots.</p>
+        <label class="field-label" for="goal-search">Search labels and paths</label>
+        <input id="goal-search" class="field" type="search" placeholder="Search goals" autocomplete="off">
+        <form id="add-domain-form" class="inline-add">
+          <input id="new-domain-name" class="field" type="text" placeholder="New domain" autocomplete="off">
+          <button id="add-domain" class="btn-secondary" type="submit">Add domain</button>
+        </form>
+        <p id="goal-editor-error" class="error" role="alert"></p>
+        <div id="goal-editor-tree" class="goal-manager-tree"></div>
+      </section>
+    </section>
 
-  <section class="card backup-card">
-    <h2>Data on this device</h2>
-    <p class="hint">Everything is stored locally in this browser — nothing is uploaded. Export a
-      backup before clearing browser data or switching devices.</p>
-    <div class="editor-row">
-      <button id="export-data" class="btn-secondary" type="button">Export backup</button>
-      <label class="btn-secondary file-btn">
-        Import backup
-        <input id="import-data" type="file" accept="application/json" hidden>
-      </label>
-    </div>
-    <p id="backup-status" class="hint"></p>
-  </section>
-</main>
+    <section id="panel-settings" class="home-panel hidden" role="tabpanel" aria-labelledby="tab-settings" data-panel="settings">
+      <h2 class="panel-title" tabindex="-1">Settings</h2>
 
+      <section class="card warning-card" aria-labelledby="practice-warning-title">
+        <h3 id="practice-warning-title">Practice tool — no PHI</h3>
+        <p>This browser-local app is for educational practice. Use anonymized labels only. Do not enter names, dates of birth, medical record numbers, or other identifying information.</p>
+      </section>
+
+      <section class="card cue-manager-card">
+        <div class="card-head">
+          <h3>Cue management</h3>
+          <button id="toggle-edit-cues" class="btn-link" type="button" aria-expanded="false">Manage cues</button>
+        </div>
+        <p id="cue-summary" class="hint"></p>
+        <div id="cue-editor" class="cue-editor hidden">
+          <p class="hint">Changes apply to future trials. Recorded cue labels remain unchanged.</p>
+          <div class="cue-template-actions">
+            <button id="restore-starter-cues" class="btn-secondary" type="button">Restore starter cues</button>
+          </div>
+          <div id="cue-editor-list" class="cue-editor-list"></div>
+          <div class="inline-add cue-add-row">
+            <input id="new-cue-label" class="field" type="text" maxlength="40" placeholder="New cue type" autocomplete="off">
+            <button id="add-cue" class="btn-secondary" type="button">Add</button>
+          </div>
+          <p id="cue-editor-error" class="error" role="alert"></p>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="accessibility-title">
+        <h3 id="accessibility-title">Accessibility</h3>
+        <label class="preference-row">
+          <span><strong>High contrast</strong><small>Increase borders and text contrast.</small></span>
+          <input id="pref-high-contrast" type="checkbox">
+        </label>
+        <label class="preference-row">
+          <span><strong>Reduce motion</strong><small>Disable nonessential movement.</small></span>
+          <input id="pref-reduce-motion" type="checkbox">
+        </label>
+      </section>
+
+      <section class="card backup-card" aria-labelledby="backup-title">
+        <h3 id="backup-title">Backup and restore</h3>
+        <p class="hint">Everything stays in this browser. Import replaces the current goals, clients, cues, sessions, and supported preferences.</p>
+        <div class="editor-row">
+          <button id="export-data" class="btn-secondary" type="button">Export backup</button>
+          <label class="btn-secondary file-btn">
+            Choose backup to import
+            <input id="import-data" type="file" accept="application/json" hidden>
+          </label>
+        </div>
+        <p id="last-backup-date" class="hint"></p>
+        <p id="backup-status" class="inline-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="card">
+        <h3>Storage</h3>
+        <p class="hint">Data is stored in this browser's localStorage. Clearing site data or using another browser/device removes access unless you exported a backup.</p>
+      </section>
+    </section>
+  </main>
 </div>
-<script src="/static/js/storage.js?v=20260824b"></script>
-<script src="/static/js/storage-customizations.js?v=20260824b"></script>
-<script src="/static/js/setup.js?v=20260824b"></script>
-<script src="/static/js/customization-ui.js?v=20260824b"></script>
+
+<dialog id="confirm-dialog" class="app-dialog" aria-labelledby="confirm-dialog-title">
+  <form method="dialog">
+    <h2 id="confirm-dialog-title">Confirm action</h2>
+    <p id="confirm-dialog-message"></p>
+    <div class="dialog-actions">
+      <button id="confirm-dialog-cancel" class="btn-secondary" value="cancel">Cancel</button>
+      <button id="confirm-dialog-accept" class="btn-primary dialog-confirm" value="confirm">Confirm</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="icon-dialog" class="app-dialog" aria-labelledby="icon-dialog-title">
+  <form method="dialog">
+    <h2 id="icon-dialog-title">Choose target icon</h2>
+    <p id="icon-dialog-target" class="hint"></p>
+    <div id="icon-options" class="icon-options" role="group" aria-label="Suggested icons"></div>
+    <label class="field-label" for="custom-icon">Custom emoji or short icon</label>
+    <input id="custom-icon" class="field" type="text" maxlength="16" autocomplete="off">
+    <div class="dialog-actions">
+      <button class="btn-secondary" value="cancel">Cancel</button>
+      <button id="use-auto-icon" class="btn-secondary" type="button">Use automatic</button>
+      <button id="save-icon" class="btn-primary dialog-confirm" type="button">Apply</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/static/js/storage.js?v=20260824c"></script>
+<script src="/static/js/storage-customizations.js?v=20260824c"></script>
+<script src="/static/js/setup.js?v=20260824c"></script>
+<script src="/static/js/customization-ui.js?v=20260824c"></script>
 </body>
 </html>

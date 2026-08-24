@@ -3,6 +3,7 @@ const { test, expect } = require("@playwright/test");
 test("starter cues appear in-session and can be restored after removal", async ({ page }) => {
   await page.goto("/");
 
+  await page.locator("#tab-settings").click();
   await page.locator("#toggle-edit-cues").click();
   const cueInputs = page.locator("#cue-editor-list input");
   await expect(cueInputs).toHaveCount(8);
@@ -15,6 +16,7 @@ test("starter cues appear in-session and can be restored after removal", async (
     DataTaker.getCues().forEach((cue) => DataTaker.deleteCue(cue.id));
   });
   await page.reload();
+  await page.locator("#tab-settings").click();
   await page.locator("#toggle-edit-cues").click();
   await expect(page.locator("#cue-editor-list input")).toHaveCount(0);
   await expect(page.locator("#restore-starter-cues")).toBeVisible();
@@ -51,11 +53,14 @@ test("empty cue configuration can be restored directly from the session screen",
 test("custom target icons persist into sessions, review graphs, and backups", async ({ page }) => {
   await page.goto("/");
   await page.locator("#toggle-edit-goals").click();
+  await page.locator("#goal-search").fill("Initial /r/ in CVC words");
 
   const firstIcon = page.locator(".target-chip-edit .target-icon-button").first();
   await expect(firstIcon).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept("🦷"));
   await firstIcon.click();
+  await expect(page.locator("#icon-dialog")).toBeVisible();
+  await page.locator("#custom-icon").fill("🦷");
+  await page.locator("#save-icon").click();
   await expect(page.locator(".target-chip-edit .target-icon-button").first()).toHaveText("🦷");
 
   const backupRoundTrip = await page.evaluate(() => {
@@ -108,10 +113,10 @@ test("HTML uses versioned mutable assets so stale immutable JS cannot survive a 
     scripts.map((script) => script.getAttribute("src"))
   );
   expect(scriptSources.length).toBeGreaterThan(0);
-  scriptSources.forEach((src) => expect(src).toContain("?v=20260824b"));
+  scriptSources.forEach((src) => expect(src).toContain("?v=20260824c"));
 
   const stylesheetSources = await page.locator('link[rel="stylesheet"][href^="/static/css/"]').evaluateAll((links) =>
     links.map((link) => link.getAttribute("href"))
   );
-  stylesheetSources.forEach((href) => expect(href).toContain("?v=20260824b"));
+  stylesheetSources.forEach((href) => expect(href).toContain("?v=20260824c"));
 });

@@ -17,21 +17,32 @@ logging.
 - **Runs entirely client-side** — a static site, deployable to Vercel with zero
   configuration and no backend/database to provision. All data (goals, clients,
   sessions, trials) lives in the browser's `localStorage`; nothing is uploaded.
+- **Organized home workspace** — Start, Sessions, Goals, and Settings are
+  accessible, directly linkable sections. Start stays focused on resuming or
+  beginning treatment; history, administration, and goal maintenance no longer
+  compete in one long card sequence.
 - **Custom goals** — the Domain → Long-Term Goal → Short-Term Goal → Target
-  hierarchy ships with SLP starter examples (Articulation, Fluency, Language),
-  but a "Manage goals" panel lets you add and delete your own at every level —
-  the starter examples can be edited away too.
-- **Backup / restore** — export the whole local dataset to a JSON file and
-  re-import it (useful before clearing browser data or moving devices, since
-  everything is device-local).
+  hierarchy ships with SLP starter examples and supports add, inline rename,
+  duplicate, within-parent reorder, archive/restore, and confirmed permanent
+  deletion. Stable IDs survive all non-delete edits. Archived items stay
+  available to historical snapshots but do not appear in new-session setup.
+- **Backup / restore** — export the whole local dataset to JSON. Imports are
+  validated, summarized, and confirmed before replacement; the app downloads a
+  safety backup first when browser support permits and reports results inline.
 - **Session engine** — start/end a session with an auto-running timer; total
   duration is computed for ASHA practicum-hour logging. Configured targets can
   be added during an active session, and the current target label can be edited
   without detaching any recorded trials. Unfinished sessions remain recoverable
   from the home screen, including the active target and armed cue state.
 - **Session history** — ended sessions are listed by anonymized client with
-  duration, overall accuracy, and expandable per-target accuracy. Target labels
-  and goal paths are snapshotted so later goal edits do not rewrite history.
+  client filtering, newest/oldest sorting, search, duration, total trials,
+  overall accuracy, expandable per-target results, and direct Review/Objective
+  actions. Target labels and goal paths are snapshotted so later goal edits do
+  not rewrite history.
+- **Fast setup** — repeat the selected client's last session or reuse recent
+  target sets by stable target ID, search configured targets and goal paths,
+  then review an icon-labeled selected-target tray before starting. Deleted and
+  archived targets are reported and never silently substituted.
 - **Objective draft** — review any ended session and generate an editable
   Objective paragraph from duration, accuracy, independence, and recorded cueing.
   Download the edited draft as text or use the browser print sheet to save a PDF.
@@ -68,7 +79,7 @@ that one module and the fetch-style calls made from `setup.js` / `app.js`.
 ## Project structure
 
 ```
-index.html              # Home page (choose client, manage goals, pick targets)
+index.html              # Start / Sessions / Goals / Settings workspace
 session.html            # Live session screen
 review.html             # Ended-session review and Objective draft export
 manifest.json           # PWA manifest (Add to Home Screen on iPad/iPhone)
@@ -107,9 +118,9 @@ Home Screen** to install it as a full-screen app (per `manifest.json`).
 
 ### Quick walkthrough
 
-1. **Home:** pick a client label (or add one). Optionally tap **Manage goals**
-   to add/remove domains, goals, and targets. Tap targets to add them to the
-   session, then **Start Session**.
+1. **Start:** pick an anonymized client label, repeat a prior target set or
+   search/select targets, review the selected-target tray, then **Start Session**.
+   Use the bottom navigation for **Sessions**, **Goals**, and **Settings**.
 2. **Session:** the timer runs automatically. Arm cueing chips, then tap **+** or
    **−**. Swipe the carousel (or use the arrows) to switch targets. Watch the live
    accuracy and the last-5 log; tap **×** to undo a mis-tap.
@@ -125,12 +136,18 @@ Home Screen** to install it as a full-screen app (per `manifest.json`).
 | `dataTaker.cues.v1` | Editable cue type labels |
 | `dataTaker.sessions.v2` | Sessions + embedded datapoints + target metadata snapshots |
 | `dataTaker.activityLog.v1` | Action ledger |
+| `dataTaker.recentTargetSets.v1` | Recent stable target-ID sets by anonymized client label |
+| `dataTaker.preferences.v1` | Supported accessibility preferences |
+| `dataTaker.backupMeta.v1` | Last successful backup timestamp |
 
 Use the **Export backup** / **Import backup** buttons on the home page to move
 this data between devices or back it up before clearing site data.
 
 Session data migrates automatically from `dataTaker.sessions.v1` to `.v2` on
-first load. The original `.v1` key remains untouched as a recovery copy.
+first load. The original `.v1` key remains untouched as a recovery copy. Goal
+objects are normalized in place so older backups gain archive/order defaults
+without changing existing IDs. Current exports use backup schema version 3;
+older backups remain importable.
 
 ## Future work (deferred)
 

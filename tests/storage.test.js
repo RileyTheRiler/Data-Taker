@@ -179,3 +179,123 @@ test("requires an ended session before drafting an Objective summary", () => {
 
   assert.throws(() => DataTaker.getObjectiveDraft(session.id), /End the session/);
 });
+
+test("normalizes older goals and preserves stable IDs through edits and ordering", () => {
+  const olderGoals = {
+    domains: [{
+      id: "domain-old",
+      name: "Voice",
+      long_term_goals: [{
+        id: "ltg-old",
+        label: "Voice goal",
+        short_term_goals: [{
+          id: "stg-old",
+          label: "Resonance goal",
+          targets: [
+            { id: "target-a", label: "Forward resonance" },
+            { id: "target-b", label: "Balanced resonance" },
+          ],
+        }],
+      }],
+    }],
+  };
+  const { DataTaker } = loadDataTaker({
+    "dataTaker.goals.v1": JSON.stringify(olderGoals),
+  });
+
+  const normalized = DataTaker.getGoals();
+  assert.equal(normalized.domains[0].id, "domain-old");
+  assert.equal(normalized.domains[0].archived, false);
+  assert.equal(normalized.domains[0].long_term_goals[0].short_term_goals[0].targets[1].order, 1);
+
+  DataTaker.renameGoalNode("target", "target-a", "Anterior resonance");
+  DataTaker.reorderGoalNode("target", "target-a", 1);
+  const edited = DataTaker.getGoals().domains[0].long_term_goals[0].short_term_goals[0].targets;
+  assert.deepEqual(Array.from(edited, (target) => target.id), ["target-b", "target-a"]);
+  assert.equal(edited[1].label, "Anterior resonance");
+  assert.equal(edited[1].id, "target-a");
+});
+
+test("duplicates, archives, restores, and permanently deletes goal nodes", () => {
+  const { DataTaker } = loadDataTaker();
+  const duplicate = DataTaker.duplicateGoalNode("target", "tgt-r-cvc");
+  assert.notEqual(duplicate.id, "tgt-r-cvc");
+  assert.match(duplicate.label, /copy$/);
+
+  DataTaker.setGoalArchived("target", "tgt-r-cvc", true);
+  assert.equal(DataTaker.allTargets()["tgt-r-cvc"], undefined);
+  assert.equal(DataTaker.allTargets(true)["tgt-r-cvc"].archived, true);
+  DataTaker.setGoalArchived("target", "tgt-r-cvc", false);
+  assert.ok(DataTaker.allTargets()["tgt-r-cvc"]);
+
+  const description = DataTaker.describeGoalNode("domain", "domain-articulation");
+  assert.ok(description.ltgs > 0);
+  assert.ok(description.stgs > 0);
+  assert.ok(description.targets > 0);
+  DataTaker.deleteGoalNode("target", duplicate.id);
+  assert.equal(DataTaker.allTargets(true)[duplicate.id], undefined);
+});
+
+test("archiving current goals never rewrites completed-session snapshots", () => {
+  const { DataTaker } = loadDataTaker();
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  DataTaker.addDatapoint(session.id, "tgt-r-cvc", "+", []);
+  DataTaker.endSession(session.id);
+  const before = JSON.stringify(DataTaker.getSession(session.id).target_snapshots);
+
+  DataTaker.renameGoalNode("target", "tgt-r-cvc", "Renamed current target");
+  DataTaker.setGoalArchived("target", "tgt-r-cvc", true);
+
+  const completed = DataTaker.getSession(session.id);
+  assert.equal(JSON.stringify(completed.target_snapshots), before);
+  assert.equal(completed.targets[0].label, "Initial /r/ in CVC words");
+});
+
+test("repeat-last and recent sets report missing or archived stable target IDs", () => {
+  const { DataTaker } = loadDataTaker();
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc", "tgt-r-blends"]);
+  DataTaker.endSession(session.id);
+  DataTaker.setGoalArchived("target", "tgt-r-cvc", true);
+  DataTaker.deleteGoalNode("target", "tgt-r-blends");
+
+  const repeat = DataTaker.getRepeatLastSession("Client A");
+  assert.deepEqual(Array.from(repeat.targets, (target) => target.id), ["tgt-r-cvc", "tgt-r-blends"]);
+  assert.deepEqual(Array.from(repeat.targets, (target) => target.status), ["archived", "missing"]);
+
+  const recent = DataTaker.getRecentTargetSets("client a")[0];
+  assert.deepEqual(Array.from(recent.targets, (target) => target.status), ["archived", "missing"]);
+  assert.equal(recent.datapoints, undefined);
+});
+
+test("backup migration and round trip preserve archive, order, and preferences", () => {
+  const { DataTaker } = loadDataTaker();
+  DataTaker.setGoalArchived("target", "tgt-r-cvc", true);
+  DataTaker.reorderGoalNode("domain", "domain-language", -1);
+  DataTaker.savePreferences({ high_contrast: true, reduce_motion: true });
+  const backup = DataTaker.exportAll();
+
+  assert.equal(backup.schema_version, 3);
+  assert.deepEqual(JSON.parse(JSON.stringify(DataTaker.validateImport(backup))), {
+    clients: 0,
+    domains: 3,
+    cues: 6,
+    sessions: 0,
+  });
+
+  const second = loadDataTaker();
+  second.DataTaker.importAll(backup);
+  const imported = second.DataTaker.getGoals();
+  assert.equal(second.DataTaker.allTargets()["tgt-r-cvc"], undefined);
+  assert.equal(second.DataTaker.allTargets(true)["tgt-r-cvc"].archived, true);
+  assert.equal(imported.domains[1].id, "domain-language");
+  assert.equal(second.DataTaker.getPreferences().high_contrast, true);
+  assert.equal(second.DataTaker.getPreferences().reduce_motion, true);
+});
+
+test("rejects malformed imports before replacing current data", () => {
+  const { DataTaker } = loadDataTaker();
+  const before = JSON.stringify(DataTaker.exportAll());
+  assert.throws(() => DataTaker.importAll({ sessions: {} }), /sessions/);
+  assert.equal(JSON.stringify(DataTaker.exportAll()).replace(/"exported_at":"[^"]+"/, '"exported_at":"x"'),
+    before.replace(/"exported_at":"[^"]+"/, '"exported_at":"x"'));
+});

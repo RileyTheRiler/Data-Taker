@@ -13,6 +13,9 @@ const DataTaker = (function () {
     sessions: "dataTaker.sessions.v2",
     sessionUi: "dataTaker.sessionUi.v1",
     activity: "dataTaker.activityLog.v1",
+    recentTargetSets: "dataTaker.recentTargetSets.v1",
+    preferences: "dataTaker.preferences.v1",
+    backupMeta: "dataTaker.backupMeta.v1",
   };
 
   const LEGACY_KEYS = {
@@ -131,6 +134,35 @@ const DataTaker = (function () {
     };
   }
 
+  function normalizeGoals(input) {
+    const source = input && typeof input === "object" && Array.isArray(input.domains)
+      ? input
+      : { domains: [] };
+
+    function normalizeList(items, kind, childKey) {
+      return (Array.isArray(items) ? items : []).map((item, index) => {
+        const normalized = {
+          ...item,
+          id: item && item.id ? String(item.id) : kind + "-" + uid(),
+          archived: Boolean(item && item.archived),
+          order: index,
+        };
+        if (kind === "domain") { normalized.name = String(item && item.name || "Untitled domain"); }
+        else { normalized.label = String(item && item.label || "Untitled"); }
+        if (childKey) {
+          const childKind = childKey === "long_term_goals" ? "ltg" :
+            childKey === "short_term_goals" ? "stg" : "target";
+          const nextChildKey = childKey === "long_term_goals" ? "short_term_goals" :
+            childKey === "short_term_goals" ? "targets" : null;
+          normalized[childKey] = normalizeList(item && item[childKey], childKind, nextChildKey);
+        }
+        return normalized;
+      });
+    }
+
+    return { ...source, domains: normalizeList(source.domains, "domain", "long_term_goals") };
+  }
+
   function defaultCues() {
     return ["Max", "Mod", "Min", "Visual", "Verbal", "Tactile"].map((label) => ({
       id: "cue-" + label.toLowerCase(),
@@ -150,8 +182,10 @@ const DataTaker = (function () {
     let goals = read(KEYS.goals, null);
     if (!goals) {
       goals = defaultGoals();
-      write(KEYS.goals, goals);
     }
+    const normalized = normalizeGoals(goals);
+    if (JSON.stringify(normalized) !== JSON.stringify(goals)) { write(KEYS.goals, normalized); }
+    goals = normalized;
     return goals;
   }
 
@@ -161,7 +195,7 @@ const DataTaker = (function () {
 
   function addDomain(name) {
     const goals = getGoals();
-    const domain = { id: "domain-" + uid(), name: name, long_term_goals: [] };
+    const domain = { id: "domain-" + uid(), name: name, archived: false, order: goals.domains.length, long_term_goals: [] };
     goals.domains.push(domain);
     saveGoals(goals);
     appendActivity("create", "domain", domain.id);
@@ -172,7 +206,7 @@ const DataTaker = (function () {
     const goals = getGoals();
     const domain = goals.domains.find((d) => d.id === domainId);
     if (!domain) { throw new Error("Unknown domain."); }
-    const ltg = { id: "ltg-" + uid(), label: label, short_term_goals: [] };
+    const ltg = { id: "ltg-" + uid(), label: label, archived: false, order: domain.long_term_goals.length, short_term_goals: [] };
     domain.long_term_goals.push(ltg);
     saveGoals(goals);
     appendActivity("create", "long_term_goal", ltg.id);
@@ -184,7 +218,7 @@ const DataTaker = (function () {
     const domain = goals.domains.find((d) => d.id === domainId);
     const ltg = domain && domain.long_term_goals.find((g) => g.id === ltgId);
     if (!ltg) { throw new Error("Unknown long-term goal."); }
-    const stg = { id: "stg-" + uid(), label: label, targets: [] };
+    const stg = { id: "stg-" + uid(), label: label, archived: false, order: ltg.short_term_goals.length, targets: [] };
     ltg.short_term_goals.push(stg);
     saveGoals(goals);
     appendActivity("create", "short_term_goal", stg.id);
@@ -197,7 +231,7 @@ const DataTaker = (function () {
     const ltg = domain && domain.long_term_goals.find((g) => g.id === ltgId);
     const stg = ltg && ltg.short_term_goals.find((s) => s.id === stgId);
     if (!stg) { throw new Error("Unknown short-term goal."); }
-    const target = { id: "tgt-" + uid(), label: label };
+    const target = { id: "tgt-" + uid(), label: label, archived: false, order: stg.targets.length };
     stg.targets.push(target);
     saveGoals(goals);
     appendActivity("create", "target", target.id);
@@ -238,18 +272,159 @@ const DataTaker = (function () {
     appendActivity("delete", "target", targetId);
   }
 
-  function allTargets() {
+  function locateGoalNode(goals, type, id) {
+    for (const domain of goals.domains) {
+      if (type === "domain" && domain.id === id) {
+        return { node: domain, siblings: goals.domains, parent: null };
+      }
+      for (const ltg of domain.long_term_goals) {
+        if (type === "ltg" && ltg.id === id) {
+          return { node: ltg, siblings: domain.long_term_goals, parent: domain };
+        }
+        for (const stg of ltg.short_term_goals) {
+          if (type === "stg" && stg.id === id) {
+            return { node: stg, siblings: ltg.short_term_goals, parent: ltg };
+          }
+          const target = stg.targets.find((item) => item.id === id);
+          if (type === "target" && target) {
+            return { node: target, siblings: stg.targets, parent: stg };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  function refreshOrder(items) {
+    items.forEach((item, index) => { item.order = index; });
+  }
+
+  function goalNodeLabel(type, node) {
+    return type === "domain" ? node.name : node.label;
+  }
+
+  function renameGoalNode(type, id, label) {
+    label = String(label || "").trim();
+    if (!label) { throw new Error("A label is required."); }
+    if (label.length > 200) { throw new Error("Labels must be 200 characters or fewer."); }
+    const goals = getGoals();
+    const located = locateGoalNode(goals, type, id);
+    if (!located) { throw new Error("Goal item not found."); }
+    if (type === "domain") { located.node.name = label; }
+    else { located.node.label = label; }
+    saveGoals(goals);
+    appendActivity("modify", type, id);
+    return located.node;
+  }
+
+  function cloneGoalNode(type, node) {
+    const clone = { ...node, id: type + "-" + uid(), archived: false };
+    if (type === "domain") {
+      clone.long_term_goals = node.long_term_goals.map((item) => cloneGoalNode("ltg", item));
+      refreshOrder(clone.long_term_goals);
+    } else if (type === "ltg") {
+      clone.short_term_goals = node.short_term_goals.map((item) => cloneGoalNode("stg", item));
+      refreshOrder(clone.short_term_goals);
+    } else if (type === "stg") {
+      clone.targets = node.targets.map((item) => cloneGoalNode("target", item));
+      refreshOrder(clone.targets);
+    }
+    if (type === "domain") { clone.name += " copy"; }
+    else { clone.label += " copy"; }
+    return clone;
+  }
+
+  function duplicateGoalNode(type, id) {
+    const goals = getGoals();
+    const located = locateGoalNode(goals, type, id);
+    if (!located) { throw new Error("Goal item not found."); }
+    const index = located.siblings.indexOf(located.node);
+    const clone = cloneGoalNode(type, located.node);
+    located.siblings.splice(index + 1, 0, clone);
+    refreshOrder(located.siblings);
+    saveGoals(goals);
+    appendActivity("create", type, clone.id);
+    return clone;
+  }
+
+  function reorderGoalNode(type, id, direction) {
+    if (direction !== -1 && direction !== 1) { throw new Error("Invalid reorder direction."); }
+    const goals = getGoals();
+    const located = locateGoalNode(goals, type, id);
+    if (!located) { throw new Error("Goal item not found."); }
+    const index = located.siblings.indexOf(located.node);
+    const next = index + direction;
+    if (next < 0 || next >= located.siblings.length) { return located.node; }
+    [located.siblings[index], located.siblings[next]] = [located.siblings[next], located.siblings[index]];
+    refreshOrder(located.siblings);
+    saveGoals(goals);
+    appendActivity("modify", type, id);
+    return located.node;
+  }
+
+  function setGoalArchived(type, id, archived) {
+    const goals = getGoals();
+    const located = locateGoalNode(goals, type, id);
+    if (!located) { throw new Error("Goal item not found."); }
+    located.node.archived = Boolean(archived);
+    saveGoals(goals);
+    appendActivity(archived ? "archive" : "restore", type, id);
+    return located.node;
+  }
+
+  function goalNodeContents(type, node) {
+    if (type === "target") { return { domains: 0, ltgs: 0, stgs: 0, targets: 1 }; }
+    if (type === "stg") {
+      return { domains: 0, ltgs: 0, stgs: 1, targets: node.targets.length };
+    }
+    if (type === "ltg") {
+      return {
+        domains: 0,
+        ltgs: 1,
+        stgs: node.short_term_goals.length,
+        targets: node.short_term_goals.reduce((sum, item) => sum + item.targets.length, 0),
+      };
+    }
+    return {
+      domains: 1,
+      ltgs: node.long_term_goals.length,
+      stgs: node.long_term_goals.reduce((sum, item) => sum + item.short_term_goals.length, 0),
+      targets: node.long_term_goals.reduce((sum, item) =>
+        sum + item.short_term_goals.reduce((inner, stg) => inner + stg.targets.length, 0), 0),
+    };
+  }
+
+  function describeGoalNode(type, id) {
+    const located = locateGoalNode(getGoals(), type, id);
+    if (!located) { throw new Error("Goal item not found."); }
+    return { type, id, label: goalNodeLabel(type, located.node), ...goalNodeContents(type, located.node) };
+  }
+
+  function deleteGoalNode(type, id) {
+    const goals = getGoals();
+    const located = locateGoalNode(goals, type, id);
+    if (!located) { throw new Error("Goal item not found."); }
+    located.siblings.splice(located.siblings.indexOf(located.node), 1);
+    refreshOrder(located.siblings);
+    saveGoals(goals);
+    appendActivity("delete", type, id);
+  }
+
+  function allTargets(includeArchived) {
     const targets = {};
     getGoals().domains.forEach((domain) => {
       domain.long_term_goals.forEach((ltg) => {
         ltg.short_term_goals.forEach((stg) => {
           stg.targets.forEach((target) => {
+            const archived = Boolean(domain.archived || ltg.archived || stg.archived || target.archived);
+            if (archived && !includeArchived) { return; }
             targets[target.id] = {
               id: target.id,
               label: target.label,
               domain: domain.name,
               long_term_goal: ltg.label,
               short_term_goal: stg.label,
+              archived: archived,
             };
           });
         });
@@ -354,7 +529,7 @@ const DataTaker = (function () {
     // the v1 key intact so migration is recoverable, then write the upgraded
     // copy to the new key.
     const legacySessions = read(LEGACY_KEYS.sessions, []);
-    const known = allTargets();
+    const known = allTargets(true);
     const migrated = Array.isArray(legacySessions)
       ? legacySessions.map((session) => migrateSession(session, known))
       : [];
@@ -391,7 +566,7 @@ const DataTaker = (function () {
   }
 
   function sessionView(session) {
-    const known = allTargets();
+    const known = allTargets(true);
     const datapoints = session.datapoints || [];
 
     const targets = (session.target_ids || []).map((tid) => {
@@ -422,6 +597,66 @@ const DataTaker = (function () {
         (session.client_label || "").trim().toLowerCase() === normalizedLabel)
       .map(sessionView)
       .sort((a, b) => new Date(b.end_time).getTime() - new Date(a.end_time).getTime());
+  }
+
+  function targetSetItem(targetId, snapshot) {
+    const configured = allTargets(true)[targetId];
+    return {
+      id: targetId,
+      label: configured ? configured.label : (snapshot && snapshot.label) || "Unavailable target",
+      icon_target: configured || snapshot || { id: targetId, label: "Unavailable target" },
+      status: !configured ? "missing" : configured.archived ? "archived" : "available",
+    };
+  }
+
+  function getRepeatLastSession(clientLabel) {
+    const session = getPastSessions(clientLabel)[0];
+    if (!session) { return null; }
+    return {
+      source_session_id: session.id,
+      ended_at: session.end_time,
+      targets: session.target_ids.map((id) => targetSetItem(id, session.target_snapshots && session.target_snapshots[id])),
+    };
+  }
+
+  function saveRecentTargetSet(clientLabel, targetIds, snapshots) {
+    const all = read(KEYS.recentTargetSets, []);
+    const normalizedClient = clientLabel.trim().toLowerCase();
+    const record = {
+      id: uid(),
+      client_label: clientLabel,
+      target_ids: targetIds.slice(),
+      target_labels: targetIds.reduce((labels, id) => {
+        labels[id] = snapshots[id] ? snapshots[id].label : id;
+        return labels;
+      }, {}),
+      used_at: now(),
+    };
+    const deduped = all.filter((item) =>
+      String(item.client_label || "").trim().toLowerCase() !== normalizedClient ||
+      JSON.stringify(item.target_ids || []) !== JSON.stringify(record.target_ids));
+    deduped.unshift(record);
+    const kept = [];
+    const perClient = {};
+    deduped.forEach((item) => {
+      const key = String(item.client_label || "").trim().toLowerCase();
+      perClient[key] = (perClient[key] || 0) + 1;
+      if (perClient[key] <= 5) { kept.push(item); }
+    });
+    write(KEYS.recentTargetSets, kept);
+  }
+
+  function getRecentTargetSets(clientLabel) {
+    const normalizedClient = String(clientLabel || "").trim().toLowerCase();
+    return read(KEYS.recentTargetSets, [])
+      .filter((item) => String(item.client_label || "").trim().toLowerCase() === normalizedClient)
+      .map((item) => ({
+        ...item,
+        targets: (item.target_ids || []).map((id) => targetSetItem(id, {
+          id,
+          label: item.target_labels && item.target_labels[id],
+        })),
+      }));
   }
 
   function getActiveSessions() {
@@ -568,6 +803,7 @@ const DataTaker = (function () {
     const sessions = getSessions();
     sessions.push(session);
     saveSessions(sessions);
+    saveRecentTargetSet(clientLabel, targetIds, targetSnapshots);
     appendActivity("create", "session", session.id);
     return sessionView(session);
   }
@@ -675,42 +911,106 @@ const DataTaker = (function () {
 
   // ---------- Backup / restore ----------
 
+  function getPreferences() {
+    const value = read(KEYS.preferences, {});
+    return {
+      high_contrast: Boolean(value && value.high_contrast),
+      reduce_motion: Boolean(value && value.reduce_motion),
+    };
+  }
+
+  function savePreferences(preferences) {
+    const value = {
+      high_contrast: Boolean(preferences && preferences.high_contrast),
+      reduce_motion: Boolean(preferences && preferences.reduce_motion),
+    };
+    write(KEYS.preferences, value);
+    return value;
+  }
+
+  function getLastBackupDate() {
+    const meta = read(KEYS.backupMeta, {});
+    return meta && meta.last_successful_backup ? meta.last_successful_backup : null;
+  }
+
+  function markBackupSuccessful() {
+    const value = now();
+    write(KEYS.backupMeta, { last_successful_backup: value });
+    return value;
+  }
+
+  function validateImport(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      throw new Error("This file is not a Data Taker backup.");
+    }
+    const arrayFields = ["clients", "cues", "sessions", "activity_log", "recent_target_sets"];
+    arrayFields.forEach((field) => {
+      if (data[field] !== undefined && !Array.isArray(data[field])) {
+        throw new Error("Backup field '" + field + "' is invalid.");
+      }
+    });
+    if (data.goals !== undefined &&
+        (!data.goals || typeof data.goals !== "object" || !Array.isArray(data.goals.domains))) {
+      throw new Error("Backup goals are invalid.");
+    }
+    if (data.target_icons !== undefined &&
+        (!data.target_icons || typeof data.target_icons !== "object" || Array.isArray(data.target_icons))) {
+      throw new Error("Backup target icons are invalid.");
+    }
+    if (!["goals", "clients", "cues", "sessions"].some((field) => data[field] !== undefined)) {
+      throw new Error("The backup does not contain goals, clients, cues, or sessions.");
+    }
+    return {
+      clients: Array.isArray(data.clients) ? data.clients.length : 0,
+      domains: data.goals && Array.isArray(data.goals.domains) ? data.goals.domains.length : 0,
+      cues: Array.isArray(data.cues) ? data.cues.length : 0,
+      sessions: Array.isArray(data.sessions) ? data.sessions.length : 0,
+    };
+  }
+
   function exportAll() {
     return {
-      schema_version: 2,
+      schema_version: 3,
       exported_at: now(),
       goals: getGoals(),
       clients: getClients(),
       cues: getCues(),
       sessions: getSessions(),
       activity_log: read(KEYS.activity, []),
+      recent_target_sets: read(KEYS.recentTargetSets, []),
+      preferences: getPreferences(),
     };
   }
 
   function importAll(data) {
-    if (!data || typeof data !== "object") { throw new Error("Invalid backup file."); }
-    if (data.goals) { write(KEYS.goals, data.goals); }
+    validateImport(data);
+    if (data.goals) { write(KEYS.goals, normalizeGoals(data.goals)); }
     if (data.clients) { write(KEYS.clients, data.clients); }
     if (Array.isArray(data.cues)) { write(KEYS.cues, data.cues); }
     if (data.sessions) {
-      const known = allTargets();
+      const known = allTargets(true);
       const sessions = Array.isArray(data.sessions)
         ? data.sessions.map((session) => migrateSession(session, known))
         : [];
       write(KEYS.sessions, sessions);
     }
     if (data.activity_log) { write(KEYS.activity, data.activity_log); }
+    if (data.recent_target_sets) { write(KEYS.recentTargetSets, data.recent_target_sets); }
+    if (data.preferences) { savePreferences(data.preferences); }
   }
 
   return {
     getGoals, addDomain, addLongTermGoal, addShortTermGoal, addTarget,
     deleteDomain, deleteLongTermGoal, deleteShortTermGoal, deleteTarget,
+    renameGoalNode, duplicateGoalNode, reorderGoalNode, setGoalArchived, describeGoalNode, deleteGoalNode,
     allTargets,
     getClients, addClient,
     getCues, addCue, renameCue, deleteCue,
     getSessions, getPastSessions, getActiveSessions, getSession, getObjectiveDraft, startSession, endSession,
+    getRepeatLastSession, getRecentTargetSets,
     getSessionUi, saveSessionUi, clearSessionUi,
     addSessionTarget, renameSessionTarget, addDatapoint, deleteDatapoint,
-    exportAll, importAll,
+    getPreferences, savePreferences, getLastBackupDate, markBackupSuccessful,
+    validateImport, exportAll, importAll,
   };
 })();
