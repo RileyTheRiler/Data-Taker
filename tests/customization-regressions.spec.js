@@ -25,7 +25,8 @@ test("starter cues appear in-session and can be restored after removal", async (
     DataTaker.startSession("Client A", ["tgt-r-cvc"]).id
   );
   await page.goto("/session.html?id=" + sessionId);
-  await expect(page.locator("#cue-toggles .cue")).toHaveCount(8);
+  await expect(page.locator("#support-levels .cue-level")).toHaveCount(4);
+  await expect(page.locator("#cue-toggles .cue")).toHaveCount(5);
   await expect(page.locator('.cue[data-cue="Gestural"]')).toBeVisible();
   await expect(page.locator('.cue[data-cue="Model"]')).toBeVisible();
   await expect(page.locator("#restore-session-cues")).toBeHidden();
@@ -42,7 +43,8 @@ test("empty cue configuration can be restored directly from the session screen",
   await expect(page.locator("#cue-toggles .cue")).toHaveCount(0);
   await expect(page.locator("#restore-session-cues")).toBeVisible();
   await page.locator("#restore-session-cues").click();
-  await expect(page.locator("#cue-toggles .cue")).toHaveCount(8);
+  await expect(page.locator("#support-levels .cue-level")).toHaveCount(4);
+  await expect(page.locator("#cue-toggles .cue")).toHaveCount(5);
   await expect(page.locator("#restore-session-cues")).toBeHidden();
 });
 
@@ -106,10 +108,10 @@ test("HTML uses versioned mutable assets so stale immutable JS cannot survive a 
     scripts.map((script) => script.getAttribute("src"))
   );
   expect(scriptSources.length).toBeGreaterThan(0);
-  scriptSources.forEach((src) => expect(src).toContain("?v=20260824a"));
+  scriptSources.forEach((src) => expect(src).toContain("?v=20260824b"));
 
   const stylesheetSources = await page.locator('link[rel="stylesheet"][href^="/static/css/"]').evaluateAll((links) =>
     links.map((link) => link.getAttribute("href"))
   );
-  stylesheetSources.forEach((href) => expect(href).toContain("?v=20260824a"));
+  stylesheetSources.forEach((href) => expect(href).toContain("?v=20260824b"));
 });

@@ -1,5 +1,4 @@
 const { defineConfig, devices } = require("@playwright/test");
-const { chromium } = require("playwright");
 
 module.exports = defineConfig({
   testDir: "./tests",
@@ -7,7 +6,6 @@ module.exports = defineConfig({
   reporter: "line",
   use: {
     baseURL: "http://127.0.0.1:4173",
-    launchOptions: { executablePath: chromium.executablePath() },
     trace: "retain-on-failure",
   },
   webServer: {
@@ -20,6 +18,11 @@ module.exports = defineConfig({
     {
       name: "iPad Pro 11 landscape",
       use: { ...devices["iPad Pro 11 landscape"], browserName: "chromium" },
+    },
+    { name: "Mobile Safari", use: { ...devices["iPhone 13"], browserName: "webkit" } },
+    {
+      name: "iPad Safari landscape",
+      use: { ...devices["iPad Pro 11 landscape"], browserName: "webkit" },
     },
   ],
 });

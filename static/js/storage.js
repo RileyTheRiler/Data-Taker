@@ -11,6 +11,7 @@ const DataTaker = (function () {
     clients: "dataTaker.clients.v1",
     cues: "dataTaker.cues.v1",
     sessions: "dataTaker.sessions.v2",
+    sessionUi: "dataTaker.sessionUi.v1",
     activity: "dataTaker.activityLog.v1",
   };
 
@@ -423,6 +424,42 @@ const DataTaker = (function () {
       .sort((a, b) => new Date(b.end_time).getTime() - new Date(a.end_time).getTime());
   }
 
+  function getActiveSessions() {
+    return getSessions()
+      .filter((session) => !session.end_time)
+      .map(sessionView)
+      .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+  }
+
+  function getSessionUi(id) {
+    const allUi = read(KEYS.sessionUi, {});
+    const saved = allUi && typeof allUi === "object" ? allUi[id] : null;
+    return {
+      active_target_id: saved && saved.active_target_id ? saved.active_target_id : null,
+      armed_cues: saved && Array.isArray(saved.armed_cues) ? saved.armed_cues : [],
+      hold_cues: !saved || saved.hold_cues !== false,
+    };
+  }
+
+  function saveSessionUi(id, ui) {
+    const allUi = read(KEYS.sessionUi, {});
+    const safeUi = allUi && typeof allUi === "object" && !Array.isArray(allUi) ? allUi : {};
+    safeUi[id] = {
+      active_target_id: ui && ui.active_target_id ? ui.active_target_id : null,
+      armed_cues: ui && Array.isArray(ui.armed_cues) ? ui.armed_cues.slice() : [],
+      hold_cues: !ui || ui.hold_cues !== false,
+    };
+    write(KEYS.sessionUi, safeUi);
+    return safeUi[id];
+  }
+
+  function clearSessionUi(id) {
+    const allUi = read(KEYS.sessionUi, {});
+    if (!allUi || typeof allUi !== "object" || Array.isArray(allUi)) { return; }
+    delete allUi[id];
+    write(KEYS.sessionUi, allUi);
+  }
+
   function formatDurationWords(totalSeconds) {
     const seconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
     const parts = [];
@@ -597,6 +634,7 @@ const DataTaker = (function () {
       saveSessions(sessions);
       appendActivity("modify", "session", id);
     }
+    clearSessionUi(id);
     return sessionView(session);
   }
 
@@ -670,7 +708,8 @@ const DataTaker = (function () {
     allTargets,
     getClients, addClient,
     getCues, addCue, renameCue, deleteCue,
-    getSessions, getPastSessions, getSession, getObjectiveDraft, startSession, endSession,
+    getSessions, getPastSessions, getActiveSessions, getSession, getObjectiveDraft, startSession, endSession,
+    getSessionUi, saveSessionUi, clearSessionUi,
     addSessionTarget, renameSessionTarget, addDatapoint, deleteDatapoint,
     exportAll, importAll,
   };

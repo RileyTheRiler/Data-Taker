@@ -1,16 +1,61 @@
-// Live session screen: timer, target carousel, tap entry, dashboard, undo.
+// Live session screen: resilient session recovery, target navigation, cueing, data entry, and undo.
 
 const sessionId = new URLSearchParams(window.location.search).get("id");
 
-let state = null;          // latest session view (from DataTaker, backed by localStorage)
-let activeIndex = 0;       // which target is showing in the carousel
-let armedCues = new Set(); // cueing levels armed for the next tap(s)
+let state = null;
+let activeIndex = 0;
+let armedCues = new Set();
 let timerHandle = null;
+let feedbackHandle = null;
+let lastDatapointId = null;
+
+const SUPPORT_LEVELS = new Set(["max", "maximum", "mod", "moderate", "min", "minimal"]);
 
 function activeTarget() {
   if (!state || !state.targets.length) { return null; }
   if (activeIndex >= state.targets.length) { activeIndex = 0; }
   return state.targets[activeIndex];
+}
+
+function targetDisplayLabel(target) {
+  return typeof DataTaker.getTargetDisplayLabel === "function"
+    ? DataTaker.getTargetDisplayLabel(target)
+    : target.label;
+}
+
+function scrollActiveTargetIntoView() {
+  const strip = document.getElementById("carousel-dots");
+  const button = strip.querySelector(".target-tab.active");
+  if (!button) { return; }
+  const left = Math.max(0, button.offsetLeft - (strip.clientWidth - button.clientWidth) / 2);
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  strip.scrollTo({ left: left, behavior: reducedMotion ? "auto" : "smooth" });
+}
+
+function isSupportLevel(label) {
+  return SUPPORT_LEVELS.has(String(label || "").trim().toLowerCase());
+}
+
+function cueDisplayLabel(label) {
+  const normalized = String(label || "").trim().toLowerCase();
+  if (normalized === "max") { return "Maximum"; }
+  if (normalized === "mod") { return "Moderate"; }
+  if (normalized === "min") { return "Minimal"; }
+  return label;
+}
+
+function configuredCueLabels() {
+  return new Set(DataTaker.getCues().map(function (cue) { return cue.label; }));
+}
+
+function persistSessionUi() {
+  if (!sessionId || !state || state.end_time) { return; }
+  const target = activeTarget();
+  DataTaker.saveSessionUi(sessionId, {
+    active_target_id: target ? target.id : null,
+    armed_cues: Array.from(armedCues),
+    hold_cues: document.getElementById("hold-cues").checked,
+  });
 }
 
 // ---------- Timer ----------
@@ -31,28 +76,44 @@ function tickTimer() {
   document.getElementById("timer").textContent = formatDuration(seconds);
 }
 
-// ---------- Carousel ----------
+// ---------- Target navigation ----------
 
 function renderCarousel() {
   const target = activeTarget();
   const track = document.getElementById("carousel-track");
+  const strip = document.getElementById("carousel-dots");
+  strip.innerHTML = "";
+
   if (!target) {
     track.innerHTML = '<div class="carousel-target-label">No targets</div>';
     return;
   }
+
   track.innerHTML =
     '<div class="carousel-target-label"></div>' +
     '<div class="carousel-target-path"></div>';
-  track.querySelector(".carousel-target-label").textContent = target.label;
+  track.querySelector(".carousel-target-label").textContent = targetDisplayLabel(target);
   track.querySelector(".carousel-target-path").textContent =
     [target.domain, target.short_term_goal].filter(Boolean).join(" · ");
 
-  const dots = document.getElementById("carousel-dots");
-  dots.innerHTML = "";
-  state.targets.forEach(function (_t, i) {
-    const dot = document.createElement("span");
-    dot.className = "dot" + (i === activeIndex ? " active" : "");
-    dots.appendChild(dot);
+  state.targets.forEach(function (item, index) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "target-tab" + (index === activeIndex ? " active" : "");
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", String(index === activeIndex));
+    button.setAttribute("aria-label",
+      targetDisplayLabel(item) + ", " + item.total + " trial" + (item.total === 1 ? "" : "s"));
+    button.textContent = targetDisplayLabel(item);
+    button.addEventListener("click", function () {
+      activeIndex = index;
+      renderCarousel();
+      renderDashboard();
+      renderTargetManager();
+      persistSessionUi();
+      scrollActiveTargetIntoView();
+    });
+    strip.appendChild(button);
   });
 }
 
@@ -62,6 +123,8 @@ function moveCarousel(delta) {
   renderCarousel();
   renderDashboard();
   renderTargetManager();
+  persistSessionUi();
+  scrollActiveTargetIntoView();
 }
 
 // ---------- Mid-session target management ----------
@@ -91,7 +154,9 @@ function renderTargetManager() {
   editInput.value = target ? target.label : "";
   select.innerHTML = "";
   const included = new Set(state.target_ids);
-  const available = Object.values(DataTaker.allTargets()).filter((item) => !included.has(item.id));
+  const available = Object.values(DataTaker.allTargets()).filter(function (item) {
+    return !included.has(item.id);
+  });
   if (!available.length) {
     const option = document.createElement("option");
     option.value = "";
@@ -102,7 +167,7 @@ function renderTargetManager() {
     available.forEach(function (item) {
       const option = document.createElement("option");
       option.value = item.id;
-      option.textContent = item.label + (item.domain ? " · " + item.domain : "");
+      option.textContent = targetDisplayLabel(item) + (item.domain ? " · " + item.domain : "");
       select.appendChild(option);
     });
     addButton.disabled = false;
@@ -132,8 +197,8 @@ function saveTargetLabel() {
     );
     applyState(updated);
     showTargetManagerStatus("Target label saved.", false);
-  } catch (e) {
-    showTargetManagerStatus(e.message, true);
+  } catch (error) {
+    showTargetManagerStatus(error.message, true);
   }
 }
 
@@ -143,15 +208,16 @@ function addTargetToSession() {
   try {
     const targetId = select.value;
     const updated = DataTaker.addSessionTarget(sessionId, targetId);
-    activeIndex = updated.targets.findIndex((target) => target.id === targetId);
+    activeIndex = updated.targets.findIndex(function (target) { return target.id === targetId; });
     applyState(updated);
+    persistSessionUi();
     showTargetManagerStatus("Target added to this session.", false);
-  } catch (e) {
-    showTargetManagerStatus(e.message, true);
+  } catch (error) {
+    showTargetManagerStatus(error.message, true);
   }
 }
 
-// ---------- Dashboard ----------
+// ---------- Dashboard and recent entries ----------
 
 function renderDashboard() {
   const target = activeTarget();
@@ -165,51 +231,56 @@ function renderDashboard() {
     state.overall.total + " trial" + (state.overall.total === 1 ? "" : "s");
 }
 
-// ---------- Recent log ----------
-
 function targetLabelById(id) {
-  const t = state.targets.find(function (x) { return x.id === id; });
-  return t ? t.label : id;
+  const target = state.targets.find(function (item) { return item.id === id; });
+  return target ? targetDisplayLabel(target) : id;
 }
 
 function renderRecent() {
   const log = document.getElementById("recent-log");
   log.innerHTML = "";
   const recent = state.datapoints.slice(-5).reverse();
-  recent.forEach(function (dp) {
-    const li = document.createElement("li");
-    li.className = "recent-item";
+
+  if (!recent.length) {
+    const empty = document.createElement("li");
+    empty.className = "recent-empty";
+    empty.textContent = "Recorded trials will appear here.";
+    log.appendChild(empty);
+    return;
+  }
+
+  recent.forEach(function (datapoint) {
+    const item = document.createElement("li");
+    item.className = "recent-item";
 
     const badge = document.createElement("span");
-    badge.className = "recent-badge " + (dp.result === "+" ? "correct" : "incorrect");
-    badge.textContent = dp.result === "+" ? "+" : "−";
-    li.appendChild(badge);
+    badge.className = "recent-badge " + (datapoint.result === "+" ? "correct" : "incorrect");
+    badge.textContent = datapoint.result === "+" ? "+" : "−";
+    item.appendChild(badge);
 
     const main = document.createElement("div");
     main.className = "recent-main";
-    const tgt = document.createElement("div");
-    tgt.className = "recent-target";
-    tgt.textContent = targetLabelById(dp.target_id);
-    main.appendChild(tgt);
+    const target = document.createElement("div");
+    target.className = "recent-target";
+    target.textContent = targetLabelById(datapoint.target_id);
+    main.appendChild(target);
     const cues = document.createElement("div");
     cues.className = "recent-cues";
-    cues.textContent = dp.prompt_levels.length ? dp.prompt_levels.join(", ") : "independent";
+    cues.textContent = datapoint.prompt_levels.length ? datapoint.prompt_levels.join(", ") : "Independent";
     main.appendChild(cues);
-    li.appendChild(main);
+    item.appendChild(main);
 
     const undo = document.createElement("button");
     undo.className = "recent-undo";
     undo.type = "button";
-    undo.innerHTML = "&times;";
-    undo.title = "Undo this trial";
-    undo.addEventListener("click", function () { deleteDatapoint(dp.id); });
-    li.appendChild(undo);
-
-    log.appendChild(li);
+    undo.textContent = "Undo";
+    undo.setAttribute("aria-label", "Undo " +
+      (datapoint.result === "+" ? "correct" : "incorrect") + " trial for " + targetLabelById(datapoint.target_id));
+    undo.addEventListener("click", function () { deleteDatapoint(datapoint.id); });
+    item.appendChild(undo);
+    log.appendChild(item);
   });
 }
-
-// ---------- Rendering glue ----------
 
 function renderAll() {
   document.getElementById("client-label").textContent = state.client_label;
@@ -218,10 +289,7 @@ function renderAll() {
   renderTargetManager();
   renderRecent();
   tickTimer();
-
-  if (state.end_time) {
-    showEnded();
-  }
+  if (state.end_time) { showEnded(); }
 }
 
 function applyState(newState) {
@@ -229,35 +297,176 @@ function applyState(newState) {
   renderAll();
 }
 
-// ---------- Actions ----------
+// ---------- Cue model ----------
+
+function selectedSupportLevel() {
+  return DataTaker.getCues().find(function (cue) {
+    return isSupportLevel(cue.label) && armedCues.has(cue.label);
+  }) || null;
+}
+
+function updateCueSummary() {
+  const summary = document.getElementById("next-trial-summary");
+  const labels = Array.from(armedCues);
+  const text = labels.length ? labels.map(cueDisplayLabel).join(" + ") : "Independent";
+  summary.innerHTML = "";
+  summary.append("Next trial: ");
+  const strong = document.createElement("strong");
+  strong.textContent = text;
+  summary.appendChild(strong);
+}
+
+function setIndependent() {
+  armedCues.clear();
+  renderCueToggles();
+  persistSessionUi();
+}
+
+function chooseSupportLevel(label) {
+  DataTaker.getCues().forEach(function (cue) {
+    if (isSupportLevel(cue.label)) { armedCues.delete(cue.label); }
+  });
+  if (label) { armedCues.add(label); }
+  renderCueToggles();
+  persistSessionUi();
+}
+
+function renderCueToggles() {
+  const levelContainer = document.getElementById("support-levels");
+  const typeContainer = document.getElementById("cue-toggles");
+  const cues = DataTaker.getCues();
+  const levels = cues.filter(function (cue) { return isSupportLevel(cue.label); });
+  const types = cues.filter(function (cue) { return !isSupportLevel(cue.label); });
+  const validLabels = new Set(cues.map(function (cue) { return cue.label; }));
+
+  Array.from(armedCues).forEach(function (label) {
+    if (!validLabels.has(label)) { armedCues.delete(label); }
+  });
+
+  levelContainer.innerHTML = "";
+  typeContainer.innerHTML = "";
+
+  const independent = document.createElement("button");
+  independent.className = "cue cue-level" + (selectedSupportLevel() ? "" : " active");
+  independent.type = "button";
+  independent.textContent = "Independent";
+  independent.setAttribute("role", "radio");
+  independent.setAttribute("aria-checked", String(!selectedSupportLevel()));
+  independent.addEventListener("click", setIndependent);
+  levelContainer.appendChild(independent);
+
+  levels.forEach(function (cueType) {
+    const button = document.createElement("button");
+    const active = armedCues.has(cueType.label);
+    button.className = "cue cue-level" + (active ? " active" : "");
+    button.type = "button";
+    button.textContent = cueDisplayLabel(cueType.label);
+    button.setAttribute("role", "radio");
+    button.setAttribute("aria-checked", String(active));
+    button.addEventListener("click", function () { chooseSupportLevel(cueType.label); });
+    levelContainer.appendChild(button);
+  });
+
+  if (!types.length) {
+    const empty = document.createElement("p");
+    empty.className = "cues-empty";
+    empty.textContent = cues.length
+      ? "No additional cue types configured."
+      : "No cue types configured · trials will be recorded independently.";
+    typeContainer.appendChild(empty);
+  } else {
+    types.forEach(function (cueType) {
+      const button = document.createElement("button");
+      const active = armedCues.has(cueType.label);
+      button.className = "cue" + (active ? " active" : "");
+      button.type = "button";
+      button.dataset.cue = cueType.label;
+      button.textContent = cueType.label;
+      button.setAttribute("aria-pressed", String(active));
+      button.addEventListener("click", function () {
+        if (armedCues.has(cueType.label)) {
+          armedCues.delete(cueType.label);
+        } else {
+          armedCues.add(cueType.label);
+        }
+        renderCueToggles();
+        persistSessionUi();
+      });
+      typeContainer.appendChild(button);
+    });
+  }
+
+  updateCueSummary();
+}
+
+// ---------- Recording, feedback, and lifecycle ----------
+
+function hideFeedback() {
+  document.getElementById("trial-feedback").classList.add("hidden");
+  if (feedbackHandle) {
+    clearTimeout(feedbackHandle);
+    feedbackHandle = null;
+  }
+}
+
+function showFeedback(result, target) {
+  const feedback = document.getElementById("trial-feedback");
+  const resultLabel = result === "+" ? "Correct" : "Incorrect";
+  document.getElementById("trial-feedback-text").textContent =
+    resultLabel + " recorded · " + targetDisplayLabel(target);
+  feedback.classList.remove("hidden");
+  if (feedbackHandle) { clearTimeout(feedbackHandle); }
+  feedbackHandle = setTimeout(hideFeedback, 3500);
+}
 
 function recordTap(result) {
   const target = activeTarget();
   if (!target || (state && state.end_time)) { return; }
   try {
     const updated = DataTaker.addDatapoint(sessionId, target.id, result, Array.from(armedCues));
+    lastDatapointId = updated.datapoints[updated.datapoints.length - 1].id;
     applyState(updated);
-  } catch (e) {
-    alert(e.message);
+    showFeedback(result, target);
+    if (!document.getElementById("hold-cues").checked) {
+      armedCues.clear();
+      renderCueToggles();
+      persistSessionUi();
+    }
+  } catch (error) {
+    document.getElementById("trial-feedback-text").textContent = error.message;
+    document.getElementById("trial-feedback").classList.remove("hidden");
   }
 }
 
-function deleteDatapoint(dpId) {
+function deleteDatapoint(datapointId) {
+  if (!datapointId) { return; }
   try {
-    const updated = DataTaker.deleteDatapoint(sessionId, dpId);
+    const updated = DataTaker.deleteDatapoint(sessionId, datapointId);
+    if (lastDatapointId === datapointId) { lastDatapointId = null; }
     applyState(updated);
-  } catch (e) {
-    alert(e.message);
+    hideFeedback();
+  } catch (error) {
+    document.getElementById("trial-feedback-text").textContent = error.message;
+    document.getElementById("trial-feedback").classList.remove("hidden");
   }
+}
+
+function exitSession() {
+  if (state && !state.end_time) {
+    const leave = confirm("Leave this screen? The session will keep running and can be resumed from the home screen.");
+    if (!leave) { return; }
+    persistSessionUi();
+  }
+  window.location.href = "/";
 }
 
 function endSession() {
   if (!confirm("End this session? You won't be able to add more data.")) { return; }
   try {
-    const updated = DataTaker.endSession(sessionId);
-    applyState(updated);
-  } catch (e) {
-    alert(e.message);
+    applyState(DataTaker.endSession(sessionId));
+  } catch (error) {
+    document.getElementById("trial-feedback-text").textContent = error.message;
+    document.getElementById("trial-feedback").classList.remove("hidden");
   }
 }
 
@@ -266,62 +475,35 @@ function showEnded() {
   document.getElementById("tap-incorrect").disabled = true;
   document.getElementById("end-session").disabled = true;
   document.getElementById("toggle-target-manager").disabled = true;
+  document.getElementById("session-workspace").classList.add("hidden");
   const banner = document.getElementById("ended-banner");
+  const wasHidden = banner.classList.contains("hidden");
   banner.classList.remove("hidden");
   if (state.duration_seconds != null) {
-    document.getElementById("final-duration").textContent =
-      formatDuration(state.duration_seconds);
+    document.getElementById("final-duration").textContent = formatDuration(state.duration_seconds);
   }
   document.getElementById("review-session").href =
     "/review.html?id=" + encodeURIComponent(sessionId);
-  if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
-}
-
-// ---------- Cue toggles ----------
-
-function renderCueToggles() {
-  const container = document.getElementById("cue-toggles");
-  const cues = DataTaker.getCues();
-  container.innerHTML = "";
-
-  if (!cues.length) {
-    const empty = document.createElement("p");
-    empty.className = "cues-empty";
-    empty.textContent = "No cue types configured · trials will be recorded independently";
-    container.appendChild(empty);
-    return;
+  if (timerHandle) {
+    clearInterval(timerHandle);
+    timerHandle = null;
   }
-
-  cues.forEach(function (cueType) {
-    const btn = document.createElement("button");
-    btn.className = "cue";
-    btn.type = "button";
-    btn.dataset.cue = cueType.label;
-    btn.textContent = cueType.label;
-    btn.setAttribute("aria-pressed", "false");
-    btn.addEventListener("click", function () {
-      const cue = btn.dataset.cue;
-      if (armedCues.has(cue)) {
-        armedCues.delete(cue);
-        btn.classList.remove("active");
-        btn.setAttribute("aria-pressed", "false");
-      } else {
-        armedCues.add(cue);
-        btn.classList.add("active");
-        btn.setAttribute("aria-pressed", "true");
-      }
-    });
-    container.appendChild(btn);
-  });
+  if (wasHidden) { banner.focus(); }
 }
 
-// ---------- Wire up ----------
+// ---------- Events and initialization ----------
 
 document.getElementById("tap-correct").addEventListener("click", function () { recordTap("+"); });
 document.getElementById("tap-incorrect").addEventListener("click", function () { recordTap("-"); });
 document.getElementById("prev-target").addEventListener("click", function () { moveCarousel(-1); });
 document.getElementById("next-target").addEventListener("click", function () { moveCarousel(1); });
+document.getElementById("exit-session").addEventListener("click", exitSession);
 document.getElementById("end-session").addEventListener("click", endSession);
+document.getElementById("clear-cues").addEventListener("click", setIndependent);
+document.getElementById("hold-cues").addEventListener("change", persistSessionUi);
+document.getElementById("undo-last-trial").addEventListener("click", function () {
+  deleteDatapoint(lastDatapointId);
+});
 document.getElementById("toggle-target-manager").addEventListener("click", function () {
   const panel = document.getElementById("target-manager");
   setTargetManager(panel.classList.contains("hidden"));
@@ -330,37 +512,52 @@ document.getElementById("close-target-manager").addEventListener("click", functi
   setTargetManager(false);
 });
 document.getElementById("save-target-label").addEventListener("click", saveTargetLabel);
-document.getElementById("edit-target-label").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") { saveTargetLabel(); }
+document.getElementById("edit-target-label").addEventListener("keydown", function (event) {
+  if (event.key === "Enter") { saveTargetLabel(); }
 });
 document.getElementById("add-session-target").addEventListener("click", addTargetToSession);
 
-// Swipe support on the carousel track.
 (function () {
   const track = document.getElementById("carousel-track");
   let startX = null;
-  track.addEventListener("touchstart", function (e) { startX = e.touches[0].clientX; }, { passive: true });
-  track.addEventListener("touchend", function (e) {
+  track.addEventListener("touchstart", function (event) {
+    startX = event.touches[0].clientX;
+  }, { passive: true });
+  track.addEventListener("touchend", function (event) {
     if (startX === null) { return; }
-    const dx = e.changedTouches[0].clientX - startX;
+    const dx = event.changedTouches[0].clientX - startX;
     if (Math.abs(dx) > 40) { moveCarousel(dx < 0 ? 1 : -1); }
     startX = null;
   }, { passive: true });
 })();
 
+window.addEventListener("pagehide", persistSessionUi);
+
 function init() {
   if (!sessionId) {
-    alert("No session specified.");
     window.location.href = "/";
     return;
   }
+
   try {
+    state = DataTaker.getSession(sessionId);
+    const savedUi = DataTaker.getSessionUi(sessionId);
+    const savedIndex = state.targets.findIndex(function (target) {
+      return target.id === savedUi.active_target_id;
+    });
+    if (savedIndex >= 0) { activeIndex = savedIndex; }
+
+    const validCues = configuredCueLabels();
+    armedCues = new Set(savedUi.armed_cues.filter(function (cue) { return validCues.has(cue); }));
+    document.getElementById("hold-cues").checked = savedUi.hold_cues;
     renderCueToggles();
-    const data = DataTaker.getSession(sessionId);
-    applyState(data);
-    timerHandle = setInterval(tickTimer, 1000);
-  } catch (e) {
-    alert("Could not load session: " + e.message);
+    renderAll();
+
+    if (!state.end_time) {
+      persistSessionUi();
+      timerHandle = setInterval(tickTimer, 1000);
+    }
+  } catch (_error) {
     window.location.href = "/";
   }
 }
