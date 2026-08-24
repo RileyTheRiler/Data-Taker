@@ -41,7 +41,7 @@
 .progress-table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--card);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }

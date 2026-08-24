@@ -21,6 +21,8 @@ const DataTaker = (function () {
   const LEGACY_KEYS = {
     sessions: "dataTaker.sessions.v1",
   };
+  const APPEARANCE_MODES = ["system", "light", "dark"];
+  const COLOR_THEMES = ["teal", "ocean", "violet", "rose"];
 
   function uid() {
     if (window.crypto && crypto.randomUUID) { return crypto.randomUUID().replace(/-/g, ""); }
@@ -960,6 +962,10 @@ const DataTaker = (function () {
     return {
       high_contrast: Boolean(value && value.high_contrast),
       reduce_motion: Boolean(value && value.reduce_motion),
+      appearance_mode: APPEARANCE_MODES.includes(value && value.appearance_mode)
+        ? value.appearance_mode : "system",
+      color_theme: COLOR_THEMES.includes(value && value.color_theme)
+        ? value.color_theme : "teal",
     };
   }
 
@@ -967,6 +973,10 @@ const DataTaker = (function () {
     const value = {
       high_contrast: Boolean(preferences && preferences.high_contrast),
       reduce_motion: Boolean(preferences && preferences.reduce_motion),
+      appearance_mode: APPEARANCE_MODES.includes(preferences && preferences.appearance_mode)
+        ? preferences.appearance_mode : "system",
+      color_theme: COLOR_THEMES.includes(preferences && preferences.color_theme)
+        ? preferences.color_theme : "teal",
     };
     write(KEYS.preferences, value);
     return value;

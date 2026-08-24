@@ -29,6 +29,10 @@ logging.
 - **Backup / restore** — export the whole local dataset to JSON. Imports are
   validated, summarized, and confirmed before replacement; the app downloads a
   safety backup first when browser support permits and reports results inline.
+- **Appearance settings** — follow the device theme or explicitly choose Light
+  or Dark mode, then select Calm Teal, Ocean Blue, Soft Violet, or Warm Rose.
+  The browser-local choice applies before each page renders, is included in
+  backups, and preserves high-contrast and reduced-motion preferences.
 - **Session engine** — start/end a session with an auto-running timer; total
   duration is computed for ASHA practicum-hour logging. Configured targets can
   be added during an active session, and the current target label can be edited
@@ -92,6 +96,7 @@ progress.html           # Client/target longitudinal accuracy explorer
 manifest.json           # PWA manifest (Add to Home Screen on iPad/iPhone)
 vercel.json             # Static hosting config (clean URLs, cache headers)
 static/css/style.css    # Mobile-first styling
+static/js/appearance.js # Early light/dark and color-template application
 static/js/storage.js    # localStorage data layer (goals/clients/sessions/backup)
 static/js/setup.js      # Home page logic
 static/js/app.js        # Live session screen logic

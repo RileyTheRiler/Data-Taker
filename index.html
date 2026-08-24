@@ -12,8 +12,9 @@
 <link rel="icon" href="/static/icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <title>Data Taker</title>
-<link rel="stylesheet" href="/static/css/style.css?v=20260824d">
-<link rel="stylesheet" href="/static/css/customization.css?v=20260824d">
+<script src="/static/js/appearance.js?v=20260824e"></script>
+<link rel="stylesheet" href="/static/css/style.css?v=20260824e">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824e">
 </head>
 <body>
 <div class="app setup-app">
@@ -177,6 +178,50 @@
         </div>
       </section>
 
+      <section class="card appearance-card" aria-labelledby="appearance-title">
+        <h3 id="appearance-title">Appearance</h3>
+        <fieldset class="appearance-fieldset">
+          <legend>Mode</legend>
+          <div class="mode-options">
+            <label class="appearance-option">
+              <input type="radio" name="appearance-mode" value="system">
+              <span><strong>System</strong><small>Follow this device</small></span>
+            </label>
+            <label class="appearance-option">
+              <input type="radio" name="appearance-mode" value="light">
+              <span><strong>Light</strong><small>Always light</small></span>
+            </label>
+            <label class="appearance-option">
+              <input type="radio" name="appearance-mode" value="dark">
+              <span><strong>Dark</strong><small>Always dark</small></span>
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="appearance-fieldset color-template-fieldset">
+          <legend>Color template</legend>
+          <p class="hint">Choose the accent color used for navigation, links, charts, and selected controls.</p>
+          <div class="color-template-options">
+            <label class="color-template-option">
+              <input type="radio" name="color-theme" value="teal">
+              <span class="color-template-preview"><span class="color-swatch color-swatch-teal" aria-hidden="true"></span><strong>Calm Teal</strong></span>
+            </label>
+            <label class="color-template-option">
+              <input type="radio" name="color-theme" value="ocean">
+              <span class="color-template-preview"><span class="color-swatch color-swatch-ocean" aria-hidden="true"></span><strong>Ocean Blue</strong></span>
+            </label>
+            <label class="color-template-option">
+              <input type="radio" name="color-theme" value="violet">
+              <span class="color-template-preview"><span class="color-swatch color-swatch-violet" aria-hidden="true"></span><strong>Soft Violet</strong></span>
+            </label>
+            <label class="color-template-option">
+              <input type="radio" name="color-theme" value="rose">
+              <span class="color-template-preview"><span class="color-swatch color-swatch-rose" aria-hidden="true"></span><strong>Warm Rose</strong></span>
+            </label>
+          </div>
+        </fieldset>
+        <p id="appearance-status" class="inline-status" role="status" aria-live="polite"></p>
+      </section>
+
       <section class="card" aria-labelledby="accessibility-title">
         <h3 id="accessibility-title">Accessibility</h3>
         <label class="preference-row">
@@ -237,9 +282,9 @@
   </form>
 </dialog>
 
-<script src="/static/js/storage.js?v=20260824d"></script>
-<script src="/static/js/storage-customizations.js?v=20260824d"></script>
-<script src="/static/js/setup.js?v=20260824d"></script>
-<script src="/static/js/customization-ui.js?v=20260824d"></script>
+<script src="/static/js/storage.js?v=20260824e"></script>
+<script src="/static/js/storage-customizations.js?v=20260824e"></script>
+<script src="/static/js/setup.js?v=20260824e"></script>
+<script src="/static/js/customization-ui.js?v=20260824e"></script>
 </body>
 </html>
