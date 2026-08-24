@@ -21,8 +21,8 @@ The current web deployment has a manifest but no service worker. It must not be 
 | Device or route | Status | Evidence and limits |
 |---|---|---|
 | Samsung Galaxy Watch7 44 mm LTE | Targeted | The model launched on Wear OS 5. The app supports Wear OS 3/API 30 and later. Confirm the watch's installed Wear OS and One UI Watch versions on the real device. |
-| Wear OS small round, API 35 | Automated | Official Android Wear emulator screenshot job plus APK build. This is the closest automated shape check for the Galaxy Watch7. |
-| Wear OS square, API 35 | Automated | Official Android Wear emulator screenshot job verifies the smallest rectangular configuration. |
+| Wear OS small round, API 34 | Automated | Official Wear OS 5 Android emulator screenshot job plus APK build. This is the closest automated shape check for the Galaxy Watch7. |
+| Wear OS square, API 34 | Automated | Official Wear OS 5 Android emulator screenshot job verifies the smallest rectangular configuration. |
 | Android phone with Google Play services, Android 11+ | Targeted | Required for the Data Layer and phone authority. Exact paired phone model and Android version still need confirmation. |
 | Samsung Browser on the watch | Browser page only | Not supported for synchronized data collection. Its storage is separate and its watch-specific PWA/background guarantees are insufficient. |
 | Chrome or Samsung Internet phone PWA | Existing app | Continues to work unchanged, but cannot communicate directly with the native watch app. Export a backup and import it into the Android container before watch use. |
@@ -108,7 +108,7 @@ The Data Layer may use Bluetooth, Wi-Fi, or Google's end-to-end encrypted cloud 
 7. Turn off Bluetooth and Wi-Fi, record an action, and confirm it remains queued. Reconnect and confirm exactly one new trial appears.
 8. Retry the same operation in automated tests and confirm no duplicate trial.
 
-The `Smartwatch` GitHub workflow builds the phone and watch APKs, runs native authority tests, launches official API 35 Wear OS emulators using `wearos_small_round` and `wearos_square`, and uploads screenshots as workflow artifacts.
+The `Smartwatch` GitHub workflow builds the phone and watch APKs, runs native authority tests, launches official API 34 Wear OS 5 emulators using `wearos_small_round` and `wearos_square`, and uploads screenshots as workflow artifacts.
 
 ## Real Galaxy Watch7 checklist
 

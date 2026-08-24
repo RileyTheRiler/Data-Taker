@@ -48,7 +48,7 @@ jobs:
       - name: Capture official Wear OS emulator screenshot
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           target: android-wear
           arch: x86_64
           profile: ${{ matrix.profile }}
