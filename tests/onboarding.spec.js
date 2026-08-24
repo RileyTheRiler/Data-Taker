@@ -11,10 +11,16 @@ async function addArticulationTemplate(page) {
   await page.getByRole("button", { name: "Add Articulation template" }).click();
 }
 
+async function openGoalManagerFromStart(page) {
+  await page.getByRole("button", { name: "Edit or remove goals" }).click();
+  await expect(page).toHaveURL(/#goals$/);
+}
+
 test("starts a new installation with a focused template empty state", async ({ page }) => {
   await openCleanInstall(page);
 
   await expect(page.locator("#goal-onboarding-card")).toBeVisible();
+  await expect(page.locator("#home-goal-management-card")).toBeHidden();
   await expect(page.locator("#client-card")).toBeHidden();
   await expect(page.locator("#target-selection-card")).toBeHidden();
   await expect(page.locator("#session-start-card")).toBeHidden();
@@ -26,7 +32,7 @@ test("starts a new installation with a focused template empty state", async ({ p
   await expect(page.locator("#goal-empty-note")).toBeVisible();
 });
 
-test("adds only the selected template, opens its editor, and keeps editing reachable from Start", async ({ page }) => {
+test("puts add, edit, and remove goal controls directly on Start after a template is selected", async ({ page }) => {
   await openCleanInstall(page);
 
   await page.getByRole("button", { name: "Choose a starter template" }).click();
@@ -35,9 +41,22 @@ test("adds only the selected template, opens its editor, and keeps editing reach
   await page.getByRole("button", { name: "Add Articulation template" }).click();
 
   await expect(page.locator("#goal-template-dialog")).toBeHidden();
-  await expect(page).toHaveURL(/#goals$/);
+  await expect(page).toHaveURL(/#start$/);
+  await expect(page.locator("#goal-onboarding-card")).toBeHidden();
+  await expect(page.locator("#home-goal-management-card")).toBeVisible();
+  await expect(page.locator("#home-goal-summary")).toHaveText("1 goal · 2 objectives · 4 targets");
+  await expect(page.getByRole("button", { name: "Add from template" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add custom goal" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit or remove goals" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit or remove goals" })).toBeFocused();
+  await expect(page.locator("#home-goal-status")).toContainText("add, edit, or remove goals and objectives");
+  await expect(page.locator("#client-card")).toBeVisible();
+  await expect(page.locator("#target-selection-card")).toBeVisible();
+  await expect(page.locator(".target-select-row")).toHaveCount(4);
+
+  await openGoalManagerFromStart(page);
   await expect(page.locator("#goal-editor-discovery-status")).toContainText(
-    "Edit or delete any goal, objective, or target"
+    "Edit, add, or remove any goal, objective, or target"
   );
   await expect(page.locator(".domain-group").first()).toHaveAttribute("open", "");
   await expect(page.locator(".ltg-group").first()).toHaveAttribute("open", "");
@@ -52,20 +71,12 @@ test("adds only the selected template, opens its editor, and keeps editing reach
   expect(library.domains[0].name).toBe("Articulation");
   expect(library.domains[0].long_term_goals[0].short_term_goals[0].targets[0].id)
     .not.toBe("tgt-r-cvc");
-
-  await page.locator("#tab-start").click();
-  await expect(page.locator("#goal-onboarding-card")).toBeHidden();
-  await expect(page.locator("#client-card")).toBeVisible();
-  await expect(page.locator("#target-selection-card")).toBeVisible();
-  await expect(page.locator(".target-select-row")).toHaveCount(4);
-  await expect(page.getByRole("button", { name: "Edit goals & objectives" })).toBeVisible();
-  await page.getByRole("button", { name: "Edit goals & objectives" }).click();
-  await expect(page).toHaveURL(/#goals$/);
 });
 
-test("template goals and objectives can be renamed and removed immediately", async ({ page }) => {
+test("template goals and objectives can be renamed and removed from the Start-page manager", async ({ page }) => {
   await openCleanInstall(page);
   await addArticulationTemplate(page);
+  await openGoalManagerFromStart(page);
 
   const firstObjective = page.locator(".stg-group").first();
   await firstObjective.locator(":scope > summary").getByRole("button", { name: "Rename" }).click();
@@ -92,6 +103,9 @@ test("template goals and objectives can be renamed and removed immediately", asy
   });
   expect(result.objectiveLabels).toEqual(["Custom word-level objective"]);
   expect(result.targetCount).toBe(3);
+
+  await page.locator("#tab-start").click();
+  await expect(page.locator("#home-goal-summary")).toHaveText("1 goal · 1 objective · 3 targets");
 });
 
 test("keeps the interactive example out of stored sessions and progress", async ({ page }) => {
@@ -114,7 +128,6 @@ test("collapses long active libraries until the user asks for more", async ({ pa
   await openCleanInstall(page);
 
   await addArticulationTemplate(page);
-  await page.locator("#tab-start").click();
   await page.evaluate(() => {
     DataTaker.applyGoalTemplate("expressive-language");
     refreshAll();
