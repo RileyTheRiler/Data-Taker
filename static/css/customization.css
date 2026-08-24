@@ -10,12 +10,12 @@
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #f8fafc;
+  background: var(--surface-subtle);
   font-size: 19px;
   line-height: 1;
 }
 
-.target-icon-button:active { background: #e2e8f0; }
+.target-icon-button:active { background: var(--surface-pressed); }
 
 .cue-template-actions {
   display: flex;

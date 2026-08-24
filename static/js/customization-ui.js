@@ -1,6 +1,13 @@
 // Shared icon decoration for live-session and review screens, plus starter-cue restoration.
 
 (function () {
+  function applyUserPreferences() {
+    const preferences = DataTaker.getPreferences();
+    document.documentElement.classList.toggle("user-high-contrast", preferences.high_contrast);
+    document.documentElement.classList.toggle("user-reduce-motion", preferences.reduce_motion);
+    if (window.DataTakerAppearance) { window.DataTakerAppearance.apply(preferences); }
+  }
+
   function currentSession() {
     const id = new URLSearchParams(window.location.search).get("id");
     if (!id) { return null; }
@@ -80,6 +87,7 @@
   }
 
   function decorate() {
+    applyUserPreferences();
     bindRestoreButtons();
     decorateSession();
     decorateReview();

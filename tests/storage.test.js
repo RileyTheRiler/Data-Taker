@@ -326,7 +326,12 @@ test("backup migration and round trip preserve archive, order, and preferences",
   const { DataTaker } = loadDataTaker();
   DataTaker.setGoalArchived("target", "tgt-r-cvc", true);
   DataTaker.reorderGoalNode("domain", "domain-language", -1);
-  DataTaker.savePreferences({ high_contrast: true, reduce_motion: true });
+  DataTaker.savePreferences({
+    high_contrast: true,
+    reduce_motion: true,
+    appearance_mode: "dark",
+    color_theme: "violet",
+  });
   const backup = DataTaker.exportAll();
 
   assert.equal(backup.schema_version, 3);
@@ -345,6 +350,26 @@ test("backup migration and round trip preserve archive, order, and preferences",
   assert.equal(imported.domains[1].id, "domain-language");
   assert.equal(second.DataTaker.getPreferences().high_contrast, true);
   assert.equal(second.DataTaker.getPreferences().reduce_motion, true);
+  assert.equal(second.DataTaker.getPreferences().appearance_mode, "dark");
+  assert.equal(second.DataTaker.getPreferences().color_theme, "violet");
+});
+
+test("appearance preferences default safely and reject unsupported values", () => {
+  const { DataTaker, values } = loadDataTaker();
+  assert.deepEqual(JSON.parse(JSON.stringify(DataTaker.getPreferences())), {
+    high_contrast: false,
+    reduce_motion: false,
+    appearance_mode: "system",
+    color_theme: "teal",
+  });
+
+  const saved = DataTaker.savePreferences({
+    appearance_mode: "midnight",
+    color_theme: "neon",
+  });
+  assert.equal(saved.appearance_mode, "system");
+  assert.equal(saved.color_theme, "teal");
+  assert.equal(JSON.parse(values.get("dataTaker.preferences.v1")).appearance_mode, "system");
 });
 
 test("rejects malformed imports before replacing current data", () => {

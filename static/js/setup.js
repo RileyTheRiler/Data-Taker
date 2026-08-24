@@ -784,6 +784,14 @@ function loadSettings() {
   const preferences = DataTaker.getPreferences();
   byId("pref-high-contrast").checked = preferences.high_contrast;
   byId("pref-reduce-motion").checked = preferences.reduce_motion;
+  const appearanceMode = document.querySelector(
+    'input[name="appearance-mode"][value="' + preferences.appearance_mode + '"]'
+  );
+  const colorTheme = document.querySelector(
+    'input[name="color-theme"][value="' + preferences.color_theme + '"]'
+  );
+  if (appearanceMode) { appearanceMode.checked = true; }
+  if (colorTheme) { colorTheme.checked = true; }
   const last = DataTaker.getLastBackupDate();
   byId("last-backup-date").textContent = last
     ? "Last successful backup: " + formatSessionDate(last)
@@ -791,12 +799,17 @@ function loadSettings() {
 }
 
 function applyPreferences() {
+  const appearanceMode = document.querySelector('input[name="appearance-mode"]:checked');
+  const colorTheme = document.querySelector('input[name="color-theme"]:checked');
   const preferences = DataTaker.savePreferences({
     high_contrast: byId("pref-high-contrast").checked,
     reduce_motion: byId("pref-reduce-motion").checked,
+    appearance_mode: appearanceMode ? appearanceMode.value : "system",
+    color_theme: colorTheme ? colorTheme.value : "teal",
   });
   document.documentElement.classList.toggle("user-high-contrast", preferences.high_contrast);
   document.documentElement.classList.toggle("user-reduce-motion", preferences.reduce_motion);
+  if (window.DataTakerAppearance) { window.DataTakerAppearance.apply(preferences); }
 }
 
 // ---------- Backup and import ----------
@@ -925,6 +938,12 @@ byId("import-data").addEventListener("change", function (event) {
 });
 byId("pref-high-contrast").addEventListener("change", applyPreferences);
 byId("pref-reduce-motion").addEventListener("change", applyPreferences);
+document.querySelectorAll('input[name="appearance-mode"], input[name="color-theme"]').forEach(function (input) {
+  input.addEventListener("change", function () {
+    applyPreferences();
+    show("appearance-status", "Appearance saved for this browser.");
+  });
+});
 
 const iconChoices = ["🎯", "🗣️", "💬", "👂", "🎙️", "🌊", "📖", "✍️", "🧠", "🦷", "👄", "⭐"];
 iconChoices.forEach(function (choice) {
