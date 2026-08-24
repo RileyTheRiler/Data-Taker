@@ -21,11 +21,17 @@ logging.
   accessible, directly linkable sections. Start stays focused on resuming or
   beginning treatment; history, administration, and goal maintenance no longer
   compete in one long card sequence.
+- **Focused first run and goal templates** — new installations begin with an
+  empty active library and can add one editable Articulation, Expressive
+  Language, Receptive Language, Fluency, Social Communication, or Voice
+  template. A non-persistent example session teaches the trial workflow without
+  adding client, history, or progress data. Existing browser libraries are never
+  replaced.
 - **Custom goals** — the Domain → Long-Term Goal → Short-Term Goal → Target
-  hierarchy ships with SLP starter examples and supports add, inline rename,
-  duplicate, within-parent reorder, archive/restore, and confirmed permanent
-  deletion. Stable IDs survive all non-delete edits. Archived items stay
-  available to historical snapshots but do not appear in new-session setup.
+  hierarchy supports add, inline rename, duplicate, within-parent reorder,
+  archive/restore, and confirmed permanent deletion. Stable IDs survive all
+  non-delete edits. Archived items stay available to historical snapshots but
+  do not appear in new-session setup.
 - **Backup / restore** — export the whole local dataset to JSON. Imports are
   validated, summarized, and confirmed before replacement; the app downloads a
   safety backup first when browser support permits and reports results inline.
@@ -95,10 +101,13 @@ review.html             # Ended-session review and Objective draft export
 progress.html           # Client/target longitudinal accuracy explorer
 manifest.json           # PWA manifest (Add to Home Screen on iPad/iPhone)
 vercel.json             # Static hosting config (clean URLs, cache headers)
-static/css/style.css    # Mobile-first styling
-static/js/appearance.js # Early light/dark and color-template application
-static/js/storage.js    # localStorage data layer (goals/clients/sessions/backup)
-static/js/setup.js      # Home page logic
+static/css/style.css       # Mobile-first styling
+static/css/onboarding.css  # Goal-template and example-session styling
+static/js/appearance.js    # Early light/dark and color-template application
+static/js/storage.js       # localStorage data layer (goals/clients/sessions/backup)
+static/js/goal-templates.js # First-run gate and editable starter catalog
+static/js/setup.js         # Home page logic
+static/js/onboarding.js    # Template picker, demo, and compact target browsing
 static/js/app.js        # Live session screen logic
 static/js/review.js     # Review screen and text/PDF export logic
 static/js/progress.js   # Per-target history chart and exact data table
@@ -131,9 +140,11 @@ Home Screen** to install it as a full-screen app (per `manifest.json`).
 
 ### Quick walkthrough
 
-1. **Start:** pick an anonymized client label, repeat a prior target set or
-   search/select targets, review the selected-target tray, then **Start Session**.
-   Use the bottom navigation for **Sessions**, **Goals**, and **Settings**.
+1. **Start:** on a new installation, choose one editable starter template,
+   create a custom goal, or try the unsaved example session. Then pick an
+   anonymized client label, search/select targets, review the selected-target
+   tray, and tap **Start Session**. Use the bottom navigation for **Sessions**,
+   **Goals**, and **Settings**.
 2. **Session:** the timer runs automatically. Arm cueing chips, then tap **+** or
    **−**. Swipe the carousel (or use the arrows) to switch targets. Watch the live
    accuracy and the last-5 log; tap **×** to undo a mis-tap.
