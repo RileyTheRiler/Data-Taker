@@ -3,19 +3,40 @@
 (function () {
   const VISIBLE_TARGET_LIMIT = 5;
   let showAllTargets = false;
-  let templateReturnSection = "start";
   let demoTrials = [];
   const demoCues = new Set();
 
   function id(name) { return document.getElementById(name); }
 
-  function currentSection() {
-    const selected = document.querySelector('.home-tab[aria-selected="true"]');
-    return selected ? selected.dataset.section : "start";
-  }
-
   function libraryIsEmpty() {
     return Object.keys(DataTaker.allTargets()).length === 0;
+  }
+
+  function goalLibraryCounts() {
+    const counts = { goals: 0, objectives: 0, targets: 0 };
+    DataTaker.getGoals().domains.forEach(function (domain) {
+      domain.long_term_goals.forEach(function (ltg) {
+        counts.goals += 1;
+        ltg.short_term_goals.forEach(function (stg) {
+          counts.objectives += 1;
+          counts.targets += stg.targets.length;
+        });
+      });
+    });
+    return counts;
+  }
+
+  function refreshHomeGoalManager() {
+    const card = id("home-goal-management-card");
+    if (!card) { return; }
+    const empty = libraryIsEmpty();
+    card.classList.toggle("hidden", empty);
+    if (empty) { return; }
+    const counts = goalLibraryCounts();
+    id("home-goal-summary").textContent =
+      counts.goals + " goal" + (counts.goals === 1 ? "" : "s") + " · " +
+      counts.objectives + " objective" + (counts.objectives === 1 ? "" : "s") + " · " +
+      counts.targets + " target" + (counts.targets === 1 ? "" : "s");
   }
 
   function refreshOnboarding() {
@@ -29,6 +50,7 @@
       id("repeat-session-card").classList.add("hidden");
       id("recent-sets-card").classList.add("hidden");
     }
+    refreshHomeGoalManager();
     compactTargetRows();
   }
 
@@ -53,11 +75,12 @@
     }
   }
 
-  function expandCreatedGoalHierarchy(domainIds) {
-    const createdDomains = new Set(domainIds || []);
-    if (!createdDomains.size || typeof openGoalGroups === "undefined") { return; }
+  function expandGoalHierarchy(domainIds) {
+    if (typeof openGoalGroups === "undefined") { return; }
+    const requestedDomains = new Set(domainIds || []);
+    const expandAll = requestedDomains.size === 0;
     DataTaker.getGoals().domains.forEach(function (domain) {
-      if (!createdDomains.has(domain.id)) { return; }
+      if (!expandAll && !requestedDomains.has(domain.id)) { return; }
       openGoalGroups.add(domain.id);
       domain.long_term_goals.forEach(function (ltg) {
         openGoalGroups.add(ltg.id);
@@ -71,13 +94,13 @@
   function openGoalEditor(domainIds, message) {
     const search = id("goal-search");
     if (search) { search.value = ""; }
-    expandCreatedGoalHierarchy(domainIds);
+    expandGoalHierarchy(domainIds);
     activateSection("goals", { focus: true });
     renderGoalManager();
     const status = id("goal-editor-discovery-status");
     if (status) {
       status.textContent = message ||
-        "Expand any goal to edit, archive, restore, duplicate, or permanently delete its contents.";
+        "Rename or permanently delete any goal, objective, or target below. You can also add new items at each level.";
     }
   }
 
@@ -100,18 +123,35 @@
       }
     }
 
-    const selectionHead = id("target-selection-card") && id("target-selection-card").querySelector(".card-head");
-    if (selectionHead && !id("edit-goals-from-start")) {
-      const edit = document.createElement("button");
-      edit.id = "edit-goals-from-start";
-      edit.type = "button";
-      edit.className = "btn-link";
-      edit.textContent = "Edit goals & objectives";
-      edit.addEventListener("click", function () {
-        openGoalEditor([], "Edit or remove any goal, objective, or target below.");
+    if (!id("home-goal-management-card")) {
+      const card = document.createElement("section");
+      card.id = "home-goal-management-card";
+      card.className = "card home-goal-management-card hidden";
+      card.setAttribute("aria-labelledby", "home-goal-management-title");
+      card.innerHTML =
+        '<div class="card-head home-goal-management-head">' +
+          '<div>' +
+            '<p class="eyebrow">Goal library</p>' +
+            '<h3 id="home-goal-management-title">Goals &amp; objectives</h3>' +
+            '<p id="home-goal-summary" class="hint"></p>' +
+          '</div>' +
+        '</div>' +
+        '<p class="home-goal-help">Add another goal, change template wording, or remove goals and objectives before starting a session.</p>' +
+        '<div class="goal-home-actions">' +
+          '<button id="add-template-goal-home" class="btn-secondary" type="button">Add from template</button>' +
+          '<button id="add-custom-goal-home" class="btn-secondary" type="button">Add custom goal</button>' +
+          '<button id="edit-remove-goals-home" class="btn-primary" type="button">Edit or remove goals</button>' +
+        '</div>' +
+        '<p id="home-goal-status" class="inline-status" role="status" aria-live="polite"></p>';
+      id("target-selection-card").before(card);
+
+      id("add-template-goal-home").addEventListener("click", openTemplates);
+      id("add-custom-goal-home").addEventListener("click", openCustomGoal);
+      id("edit-remove-goals-home").addEventListener("click", function () {
+        openGoalEditor([], "Edit, add, or remove any goal, objective, or target below.");
       });
-      selectionHead.appendChild(edit);
     }
+    refreshHomeGoalManager();
   }
 
   function renderTemplates() {
@@ -162,10 +202,12 @@
           refreshAll();
           refreshOnboarding();
           id("goal-template-dialog").close();
-          openGoalEditor(
-            created.domain_ids,
-            created.title + " added. Edit or delete any goal, objective, or target below, then return to Start when ready."
-          );
+          activateSection("start", { focus: true });
+          refreshHomeGoalManager();
+          id("home-goal-status").textContent =
+            created.title + " added. Use the controls above to add, edit, or remove goals and objectives.";
+          id("home-goal-management-card").scrollIntoView({ block: "nearest" });
+          id("edit-remove-goals-home").focus();
         } catch (error) {
           id("template-status").textContent = error.message;
           add.disabled = false;
@@ -178,7 +220,6 @@
   }
 
   function openTemplates() {
-    templateReturnSection = currentSection();
     id("template-status").textContent = "";
     renderTemplates();
     id("goal-template-dialog").showModal();
