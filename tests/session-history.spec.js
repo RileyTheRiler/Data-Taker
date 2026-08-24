@@ -92,19 +92,19 @@ test("keeps a new session target label after the goal is deleted", async ({ page
 
 test("adds and edits a custom cue used by the session screen", async ({ page }) => {
   await page.locator("#toggle-edit-cues").click();
-  await page.locator("#new-cue-label").fill("Gestural");
+  await page.locator("#new-cue-label").fill("Phonemic");
   await page.locator("#add-cue").click();
-  await expect(page.locator("#cue-editor-list input").last()).toHaveValue("Gestural");
+  await expect(page.locator("#cue-editor-list input").last()).toHaveValue("Phonemic");
 
-  await page.locator("#cue-editor-list input").last().fill("Gesture");
+  await page.locator("#cue-editor-list input").last().fill("Phoneme");
   await page.locator("#cue-editor-list .cue-save").last().click();
-  await expect(page.locator("#cue-editor-list input").last()).toHaveValue("Gesture");
+  await expect(page.locator("#cue-editor-list input").last()).toHaveValue("Phoneme");
 
   const sessionId = await page.evaluate(() =>
     DataTaker.startSession("Client A", ["tgt-r-cvc"]).id
   );
   await page.goto("/session.html?id=" + sessionId);
-  await expect(page.locator('.cue[data-cue="Gesture"]')).toBeVisible();
+  await expect(page.locator('.cue[data-cue="Phoneme"]')).toBeVisible();
 });
 
 test("adds and renames a target during a session without losing its trial", async ({ page }) => {
@@ -118,12 +118,12 @@ test("adds and renames a target during a session without losing its trial", asyn
   await page.locator("#toggle-target-manager").click();
   await page.locator("#available-targets").selectOption("tgt-r-blends");
   await page.locator("#add-session-target").click();
-  await expect(page.locator(".carousel-target-label")).toHaveText("Initial /r/ blends (br, cr, gr)");
+  await expect(page.locator(".carousel-target-label")).toContainText("Initial /r/ blends (br, cr, gr)");
 
   await page.locator("#tap-incorrect").click();
   await page.locator("#edit-target-label").fill("Initial rhotic blends");
   await page.locator("#save-target-label").click();
-  await expect(page.locator(".carousel-target-label")).toHaveText("Initial rhotic blends");
+  await expect(page.locator(".carousel-target-label")).toContainText("Initial rhotic blends");
   await expect(page.locator(".recent-item").first()).toContainText("Initial rhotic blends");
 
   const session = await page.evaluate((id) => DataTaker.getSession(id), sessionId);

@@ -12,7 +12,8 @@
 <link rel="icon" href="/static/icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <title>Data Taker — Start Session</title>
-<link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="/static/css/style.css?v=20260824a">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824a">
 </head>
 <body>
 <div class="app">
@@ -52,7 +53,8 @@
     <div id="goal-tree" class="goal-tree"></div>
     <div id="goal-editor" class="goal-editor hidden">
       <p class="hint">Add your own domains, goals, and targets. Everything here (including the
-        starter examples) can be edited or removed — it's stored only on this device.</p>
+        starter examples) can be edited or removed — it's stored only on this device. Tap the icon
+        beside a target to replace it with any emoji or short icon you prefer.</p>
 
       <div class="editor-row">
         <input id="new-domain-name" class="field" type="text" placeholder="New domain, e.g. Voice" autocomplete="off">
@@ -98,6 +100,10 @@
     <p id="cue-summary" class="hint"></p>
     <div id="cue-editor" class="cue-editor hidden">
       <p class="hint">Changes apply to future trials. Previously recorded cue labels stay in session history.</p>
+      <div class="cue-template-actions">
+        <button id="restore-starter-cues" class="btn-secondary" type="button">Restore starter cues</button>
+        <p class="cue-template-note">Starter set: Max, Mod, Min, Visual, Verbal, Gestural, Model, and Tactile. You can rename or delete any of them.</p>
+      </div>
       <div id="cue-editor-list" class="cue-editor-list"></div>
       <div class="inline-add cue-add-row">
         <input id="new-cue-label" class="field" type="text" maxlength="40" placeholder="New cue type" autocomplete="off">
@@ -123,7 +129,9 @@
 </main>
 
 </div>
-<script src="/static/js/storage.js"></script>
-<script src="/static/js/setup.js"></script>
+<script src="/static/js/storage.js?v=20260824a"></script>
+<script src="/static/js/storage-customizations.js?v=20260824a"></script>
+<script src="/static/js/setup.js?v=20260824a"></script>
+<script src="/static/js/customization-ui.js?v=20260824a"></script>
 </body>
 </html>
