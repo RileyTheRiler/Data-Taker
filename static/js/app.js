@@ -484,6 +484,10 @@ function showEnded() {
   }
   document.getElementById("review-session").href =
     "/review.html?id=" + encodeURIComponent(sessionId);
+  const progressParams = new URLSearchParams({ client: state.client_label });
+  if (state.targets[0]) { progressParams.set("target", state.targets[0].id); }
+  document.getElementById("progress-session").href =
+    "/progress.html?" + progressParams.toString();
   if (timerHandle) {
     clearInterval(timerHandle);
     timerHandle = null;

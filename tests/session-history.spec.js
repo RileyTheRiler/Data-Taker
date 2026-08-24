@@ -139,8 +139,9 @@ test("reviews an ended session and exports the edited Objective draft", async ({
   await page.locator("#tab-sessions").click();
   const item = page.locator(".history-item");
   await item.locator("summary").click();
-  await expect(item.locator(".history-review-link")).toBeVisible();
-  await item.locator(".history-review-link").click();
+  const reviewLink = item.getByRole("link", { name: "Review", exact: true });
+  await expect(reviewLink).toBeVisible();
+  await reviewLink.click();
 
   await expect(page).toHaveURL(/\/review\.html\?id=session-a-new$/);
   await expect(page.locator("#review-duration")).toHaveText("00:30:05");

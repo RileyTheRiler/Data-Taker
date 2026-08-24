@@ -53,6 +53,10 @@ test("shows graphs and longitudinal progress on the review page", async ({ page 
   await expect(summary.locator(".progress-svg")).toBeVisible();
   await expect(summary.locator(".progress-note")).toContainText("50% · latest 67% · +17 percentage points");
   await expect(summary.locator(".target-trend-row").first()).toContainText("50% → 100% (+50 pp)");
+  await expect(summary.locator(".target-trend-label").first()).toHaveAttribute(
+    "href",
+    "/progress.html?client=Client+A&target=tgt-r-cvc"
+  );
 
   const overflow = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
@@ -70,4 +74,8 @@ test("shows the summary immediately on an already ended session screen", async (
   await expect(summary).toBeVisible();
   await expect(summary.locator("[data-summary-duration]")).toHaveText("00:30:00");
   await expect(summary.locator(".progress-svg")).toBeVisible();
+  await expect(page.locator("#progress-session")).toHaveAttribute(
+    "href",
+    "/progress.html?client=Client+A&target=tgt-r-cvc"
+  );
 });

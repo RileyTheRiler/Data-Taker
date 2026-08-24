@@ -57,7 +57,7 @@ test("offers a safe route back to every unfinished session", async ({ page }) =>
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator("#exit-session").click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/");
   await expect(page.locator("#active-session-card")).toBeVisible();
 });
 

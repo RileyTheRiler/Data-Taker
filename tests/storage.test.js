@@ -60,6 +60,61 @@ test("returns ended sessions for one client with target and duration summaries",
   assert.equal(DataTaker.getPastSessions("Client B").length, 0);
 });
 
+test("returns stable per-target history in chronological order without treating no trials as missing", () => {
+  const sessions = [
+    {
+      id: "older",
+      client_label: "Client A",
+      target_ids: ["tgt-r-cvc"],
+      target_snapshots: {
+        "tgt-r-cvc": {
+          id: "tgt-r-cvc",
+          label: "Initial /r/ in CVC words",
+          domain: "Articulation",
+          long_term_goal: "Produce /r/ accurately",
+          short_term_goal: "Produce initial /r/ at the word level",
+        },
+      },
+      start_time: "2026-08-01T17:00:00.000Z",
+      end_time: "2026-08-01T17:10:00.000Z",
+      datapoints: [
+        { id: "one", target_id: "tgt-r-cvc", result: "+", prompt_levels: [] },
+        { id: "two", target_id: "tgt-r-cvc", result: "-", prompt_levels: [] },
+      ],
+    },
+    {
+      id: "newer",
+      client_label: "Client A",
+      target_ids: ["tgt-r-cvc"],
+      target_snapshots: {
+        "tgt-r-cvc": {
+          id: "tgt-r-cvc",
+          label: "Initial rhotic words",
+          domain: "Articulation",
+          long_term_goal: "Produce /r/ accurately",
+          short_term_goal: "Produce initial /r/ at the word level",
+        },
+      },
+      start_time: "2026-08-20T17:00:00.000Z",
+      end_time: "2026-08-20T17:10:00.000Z",
+      datapoints: [],
+    },
+  ];
+  const { DataTaker } = loadDataTaker({
+    "dataTaker.sessions.v2": JSON.stringify(sessions),
+  });
+
+  const history = DataTaker.getTargetHistory("client a", "tgt-r-cvc");
+
+  assert.equal(history.client_label, "Client A");
+  assert.equal(history.target.label, "Initial rhotic words");
+  assert.equal(history.target.short_term_goal, "Produce initial /r/ at the word level");
+  assert.deepEqual(Array.from(history.sessions, (session) => session.session_id), ["older", "newer"]);
+  assert.deepEqual(Array.from(history.sessions, (session) => session.percent), [50, 0]);
+  assert.deepEqual(Array.from(history.sessions, (session) => session.total), [2, 0]);
+  assert.equal(DataTaker.getTargetHistory("Client B", "tgt-r-cvc"), null);
+});
+
 test("recovers active sessions and persists ephemeral session controls", () => {
   const { DataTaker, values } = loadDataTaker();
   const older = DataTaker.startSession("Client A", ["tgt-r-cvc"]);

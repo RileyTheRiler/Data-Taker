@@ -103,16 +103,23 @@ test("filters and sorts session history with separate Review and Objective actio
   await page.locator(".history-item summary").click();
   await expect(page.getByRole("link", { name: "Review", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Objective", exact: true })).toHaveAttribute("href", /#objective$/);
+  await expect(page.getByRole("link", { name: "Progress", exact: true })).toHaveAttribute(
+    "href",
+    /progress\.html\?client=Client\+B&target=tgt-easy-onset$/
+  );
 });
 
 test("renames, duplicates, reorders, archives, restores, and deletes goals through the UI", async ({ page }) => {
   await page.goto("/#goals");
   const firstDomain = page.locator(".domain-group").first();
-  await firstDomain.locator("summary").first().click();
+  await firstDomain.locator(":scope > summary .goal-node-label").click();
+  await expect(firstDomain).toHaveAttribute("open", "");
   const firstLtg = firstDomain.locator(".ltg-group").first();
-  await firstLtg.locator("summary").first().click();
+  await firstLtg.locator(":scope > summary .goal-node-label").click();
+  await expect(firstLtg).toHaveAttribute("open", "");
   const firstStg = firstLtg.locator(".stg-group").first();
-  await firstStg.locator("summary").first().click();
+  await firstStg.locator(":scope > summary .goal-node-label").click();
+  await expect(firstStg).toHaveAttribute("open", "");
   const row = firstStg.locator(".target-manager-list > .goal-node-row").first();
   const originalId = await page.evaluate(() =>
     DataTaker.getGoals().domains[0].long_term_goals[0].short_term_goals[0].targets[0].id
@@ -178,6 +185,40 @@ test("validates imports, confirms replacement, and reports failures inline", asy
   expect(download.suggestedFilename()).toMatch(/^data-taker-safety-backup-/);
   await expect(page.locator("#backup-status")).toHaveText("Backup imported successfully.");
   await expect(page.locator("#last-backup-date")).toContainText("Last successful backup");
+});
+
+test("resets reused confirmation state so Escape cannot repeat a destructive confirmation", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    window.__confirmResults = [];
+    confirmAction("First", "Confirm once", "Confirm", true)
+      .then((result) => window.__confirmResults.push(result));
+  });
+  await page.locator("#confirm-dialog-accept").click();
+  await expect.poll(() => page.evaluate(() => window.__confirmResults.length)).toBe(1);
+
+  await page.evaluate(() => {
+    confirmAction("Second", "Dismiss with Escape", "Confirm", true)
+      .then((result) => window.__confirmResults.push(result));
+  });
+  await page.keyboard.press("Escape");
+  await expect.poll(() => page.evaluate(() => window.__confirmResults.length)).toBe(2);
+  expect(await page.evaluate(() => window.__confirmResults)).toEqual([true, false]);
+});
+
+test("keeps backup import keyboard-focusable and does not report a failed export as successful", async ({ page }) => {
+  await page.goto("/#settings");
+  const input = page.locator("#import-data");
+  await expect(input).not.toHaveAttribute("hidden", "");
+  await input.focus();
+  await expect(input).toBeFocused();
+  const focusOutline = await page.locator(".file-btn").evaluate((node) => getComputedStyle(node).outlineStyle);
+  expect(focusOutline).not.toBe("none");
+
+  await page.evaluate(() => { URL.createObjectURL = undefined; });
+  await page.locator("#export-data").click();
+  await expect(page.locator("#backup-status")).toContainText("No backup was created");
+  expect(await page.evaluate(() => localStorage.getItem("dataTaker.backupMeta.v1"))).toBeNull();
 });
 
 test("supports zoom, visible focus, 44px controls, text enlargement, and no horizontal overflow", async ({ page }) => {

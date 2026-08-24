@@ -565,8 +565,8 @@ const DataTaker = (function () {
     return { correct, total, percent };
   }
 
-  function sessionView(session) {
-    const known = allTargets(true);
+  function sessionView(session, knownTargets) {
+    const known = knownTargets || allTargets(true);
     const datapoints = session.datapoints || [];
 
     const targets = (session.target_ids || []).map((tid) => {
@@ -592,15 +592,56 @@ const DataTaker = (function () {
   function getPastSessions(clientLabel) {
     const normalizedLabel = (clientLabel || "").trim().toLowerCase();
     if (!normalizedLabel) { return []; }
+    return getEndedSessions().filter((session) =>
+      (session.client_label || "").trim().toLowerCase() === normalizedLabel);
+  }
+
+  function getEndedSessions() {
+    const known = allTargets(true);
     return getSessions()
-      .filter((session) => session.end_time &&
-        (session.client_label || "").trim().toLowerCase() === normalizedLabel)
-      .map(sessionView)
+      .filter((session) => session.end_time)
+      .map((session) => sessionView(session, known))
       .sort((a, b) => new Date(b.end_time).getTime() - new Date(a.end_time).getTime());
   }
 
-  function targetSetItem(targetId, snapshot) {
-    const configured = allTargets(true)[targetId];
+  function getTargetHistory(clientLabel, targetId) {
+    const normalizedLabel = String(clientLabel || "").trim().toLowerCase();
+    targetId = String(targetId || "").trim();
+    if (!normalizedLabel || !targetId) { return null; }
+
+    const matching = getEndedSessions().filter((session) =>
+      String(session.client_label || "").trim().toLowerCase() === normalizedLabel &&
+      session.targets.some((target) => target.id === targetId));
+    if (!matching.length) { return null; }
+
+    const latestTarget = matching[0].targets.find((target) => target.id === targetId);
+    const points = matching.slice().reverse().map((session) => {
+      const target = session.targets.find((candidate) => candidate.id === targetId);
+      return {
+        session_id: session.id,
+        start_time: session.start_time,
+        end_time: session.end_time,
+        correct: target.correct,
+        total: target.total,
+        percent: target.percent,
+      };
+    });
+
+    return {
+      client_label: matching[0].client_label,
+      target: {
+        id: latestTarget.id,
+        label: latestTarget.label,
+        domain: latestTarget.domain || "",
+        long_term_goal: latestTarget.long_term_goal || "",
+        short_term_goal: latestTarget.short_term_goal || "",
+      },
+      sessions: points,
+    };
+  }
+
+  function targetSetItem(targetId, snapshot, targetIndex) {
+    const configured = (targetIndex || allTargets(true))[targetId];
     return {
       id: targetId,
       label: configured ? configured.label : (snapshot && snapshot.label) || "Unavailable target",
@@ -612,10 +653,12 @@ const DataTaker = (function () {
   function getRepeatLastSession(clientLabel) {
     const session = getPastSessions(clientLabel)[0];
     if (!session) { return null; }
+    const targetIndex = allTargets(true);
     return {
       source_session_id: session.id,
       ended_at: session.end_time,
-      targets: session.target_ids.map((id) => targetSetItem(id, session.target_snapshots && session.target_snapshots[id])),
+      targets: session.target_ids.map((id) =>
+        targetSetItem(id, session.target_snapshots && session.target_snapshots[id], targetIndex)),
     };
   }
 
@@ -648,6 +691,7 @@ const DataTaker = (function () {
 
   function getRecentTargetSets(clientLabel) {
     const normalizedClient = String(clientLabel || "").trim().toLowerCase();
+    const targetIndex = allTargets(true);
     return read(KEYS.recentTargetSets, [])
       .filter((item) => String(item.client_label || "").trim().toLowerCase() === normalizedClient)
       .map((item) => ({
@@ -655,7 +699,7 @@ const DataTaker = (function () {
         targets: (item.target_ids || []).map((id) => targetSetItem(id, {
           id,
           label: item.target_labels && item.target_labels[id],
-        })),
+        }, targetIndex)),
       }));
   }
 
@@ -1006,7 +1050,8 @@ const DataTaker = (function () {
     allTargets,
     getClients, addClient,
     getCues, addCue, renameCue, deleteCue,
-    getSessions, getPastSessions, getActiveSessions, getSession, getObjectiveDraft, startSession, endSession,
+    getSessions, getEndedSessions, getPastSessions, getTargetHistory,
+    getActiveSessions, getSession, getObjectiveDraft, startSession, endSession,
     getRepeatLastSession, getRecentTargetSets,
     getSessionUi, saveSessionUi, clearSessionUi,
     addSessionTarget, renameSessionTarget, addDatapoint, deleteDatapoint,
