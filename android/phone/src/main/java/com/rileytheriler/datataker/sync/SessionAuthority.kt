@@ -14,8 +14,39 @@ import org.json.JSONObject
 class SessionAuthority(context: Context) {
     private val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
 
-    @Synchronized
-    fun initialize(payloadText: String): JSONObject {
+    fun initialize(payloadText: String): JSONObject = synchronized(SESSION_LOCK) {
+        initializeLocked(payloadText)
+    }
+
+    fun getSession(sessionId: String): JSONObject = synchronized(SESSION_LOCK) {
+        getSessionLocked(sessionId)
+    }
+
+    fun applyOperation(operationText: String): JSONObject = synchronized(SESSION_LOCK) {
+        applyOperationLocked(operationText)
+    }
+
+    fun updateUi(payloadText: String): JSONObject = synchronized(SESSION_LOCK) {
+        updateUiLocked(payloadText)
+    }
+
+    fun updatePreferences(payloadText: String): JSONObject = synchronized(SESSION_LOCK) {
+        updatePreferencesLocked(payloadText)
+    }
+
+    fun end(payloadText: String): JSONObject = synchronized(SESSION_LOCK) {
+        endLocked(payloadText)
+    }
+
+    fun watchState(
+        lastAcceptedOperationId: String? = null,
+        rejectedOperationId: String? = null,
+        error: String? = null,
+    ): JSONObject = synchronized(SESSION_LOCK) {
+        watchStateLocked(lastAcceptedOperationId, rejectedOperationId, error)
+    }
+
+    private fun initializeLocked(payloadText: String): JSONObject {
         val payload = JSONObject(payloadText)
         val session = JSONObject(payload.getJSONObject("session").toString())
         require(session.optString("id").isNotBlank()) { "Session ID is required." }
@@ -32,8 +63,7 @@ class SessionAuthority(context: Context) {
         return accepted(session, operationId = null, duplicate = false)
     }
 
-    @Synchronized
-    fun getSession(sessionId: String): JSONObject {
+    private fun getSessionLocked(sessionId: String): JSONObject {
         val session = activeSession() ?: return rejected("No active phone-owned session.")
         if (session.optString("id") != sessionId) return rejected("The active session does not match.")
         return accepted(
@@ -43,8 +73,7 @@ class SessionAuthority(context: Context) {
         )
     }
 
-    @Synchronized
-    fun applyOperation(operationText: String): JSONObject {
+    private fun applyOperationLocked(operationText: String): JSONObject {
         val operation = JSONObject(operationText)
         val operationId = operation.optString("id").trim()
         val sessionId = operation.optString("session_id").trim()
@@ -77,8 +106,7 @@ class SessionAuthority(context: Context) {
         return accepted(session, operationId, duplicate = false)
     }
 
-    @Synchronized
-    fun updateUi(payloadText: String): JSONObject {
+    private fun updateUiLocked(payloadText: String): JSONObject {
         val payload = JSONObject(payloadText)
         val session = activeSession() ?: return rejected("No active phone-owned session.")
         if (session.optString("id") != payload.optString("session_id")) {
@@ -97,8 +125,7 @@ class SessionAuthority(context: Context) {
         return accepted(session, operationId = null, duplicate = false)
     }
 
-    @Synchronized
-    fun updatePreferences(payloadText: String): JSONObject {
+    private fun updatePreferencesLocked(payloadText: String): JSONObject {
         val session = activeSession() ?: return rejected("No active phone-owned session.")
         val value = JSONObject(payloadText)
         preferences.edit()
@@ -108,8 +135,7 @@ class SessionAuthority(context: Context) {
         return accepted(session, operationId = null, duplicate = false)
     }
 
-    @Synchronized
-    fun end(payloadText: String): JSONObject {
+    private fun endLocked(payloadText: String): JSONObject {
         val payload = JSONObject(payloadText)
         val session = activeSession() ?: return rejected("No active phone-owned session.")
         if (session.optString("id") != payload.optString("session_id")) {
@@ -127,8 +153,7 @@ class SessionAuthority(context: Context) {
         )
     }
 
-    @Synchronized
-    fun watchState(
+    private fun watchStateLocked(
         lastAcceptedOperationId: String? = null,
         rejectedOperationId: String? = null,
         error: String? = null,
@@ -274,6 +299,7 @@ class SessionAuthority(context: Context) {
     }
 
     companion object {
+        private val SESSION_LOCK = Any()
         private const val PREFERENCES = "data_taker_authority"
         private const val KEY_SESSION = "active_session"
         private const val KEY_CUES = "active_cues"

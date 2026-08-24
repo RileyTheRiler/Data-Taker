@@ -62,8 +62,9 @@ class SessionAuthorityTest {
     fun simultaneousPhoneAndWatchWritesCannotCorruptCounts() {
         val phone = trial("phone-operation", "+").put("source", "phone")
         val watch = trial("watch-operation", "-")
+        val secondAuthority = SessionAuthority(ApplicationProvider.getApplicationContext())
         val first = Thread { authority.applyOperation(phone.toString()) }
-        val second = Thread { authority.applyOperation(watch.toString()) }
+        val second = Thread { secondAuthority.applyOperation(watch.toString()) }
 
         first.start()
         second.start()
