@@ -115,10 +115,12 @@ test("HTML uses versioned mutable assets so stale immutable JS cannot survive a 
   expect(scriptSources.length).toBeGreaterThan(0);
   scriptSources.forEach((src) => expect(src).toMatch(/\?v=\d{8}[a-z0-9]+$/i));
   expect(scriptSources.find((src) => src.includes("/static/js/onboarding.js")))
-    .toContain("?v=20260824f");
+    .toContain("?v=20260824g");
 
   const stylesheetSources = await page.locator('link[rel="stylesheet"][href^="/static/css/"]').evaluateAll((links) =>
     links.map((link) => link.getAttribute("href"))
   );
   stylesheetSources.forEach((href) => expect(href).toMatch(/\?v=\d{8}[a-z0-9]+$/i));
+  expect(stylesheetSources.find((href) => href.includes("/static/css/onboarding.css")))
+    .toContain("?v=20260824g");
 });
