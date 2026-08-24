@@ -59,6 +59,24 @@ class SessionAuthorityTest {
     }
 
     @Test
+    fun simultaneousPhoneAndWatchWritesCannotCorruptCounts() {
+        val phone = trial("phone-operation", "+").put("source", "phone")
+        val watch = trial("watch-operation", "-")
+        val first = Thread { authority.applyOperation(phone.toString()) }
+        val second = Thread { authority.applyOperation(watch.toString()) }
+
+        first.start()
+        second.start()
+        first.join()
+        second.join()
+
+        val session = authority.getSession("session-1").getJSONObject("session")
+        val datapoints = session.getJSONArray("datapoints")
+        assertEquals(2, datapoints.length())
+        assertEquals(2, session.getJSONArray("accepted_operation_ids").length())
+    }
+
+    @Test
     fun watchStateExcludesClientLabelAndAcknowledgesOnlyCommittedOperation() {
         authority.applyOperation(trial("operation-1", "+").toString())
 

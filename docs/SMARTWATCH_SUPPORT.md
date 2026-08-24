@@ -108,7 +108,7 @@ The Data Layer may use Bluetooth, Wi-Fi, or Google's end-to-end encrypted cloud 
 7. Turn off Bluetooth and Wi-Fi, record an action, and confirm it remains queued. Reconnect and confirm exactly one new trial appears.
 8. Retry the same operation in automated tests and confirm no duplicate trial.
 
-The `Smartwatch` GitHub workflow builds the phone and watch APKs, runs native authority tests, launches official API 34 Wear OS 5 emulators using `wearos_small_round` and `wearos_square`, and uploads screenshots as workflow artifacts.
+The `Smartwatch` GitHub workflow builds the phone and watch APKs, runs native authority and persistent-queue tests, launches official API 34 Wear OS 5 emulators using `wearos_small_round` and `wearos_square`, and uploads screenshots as workflow artifacts. Queue tests cover restart persistence, action order, delayed acknowledgements, and unknown acknowledgements; authority tests cover duplicate and delayed retries.
 
 ## Real Galaxy Watch7 checklist
 
