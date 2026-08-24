@@ -12,8 +12,9 @@
 <link rel="icon" href="/static/icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <title>Data Taker — Session</title>
-<link rel="stylesheet" href="/static/css/style.css">
-<link rel="stylesheet" href="/static/css/session-summary.css">
+<link rel="stylesheet" href="/static/css/style.css?v=20260824a">
+<link rel="stylesheet" href="/static/css/session-summary.css?v=20260824a">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824a">
 </head>
 <body>
 <div class="app">
@@ -78,6 +79,7 @@
   <section class="cues">
     <p class="cues-label">Cueing level (arm before tapping)</p>
     <div id="cue-toggles" class="cue-toggles"></div>
+    <button id="restore-session-cues" class="btn-secondary hidden" type="button">Restore starter cues</button>
   </section>
 
   <!-- Action zone -->
@@ -136,8 +138,10 @@
   </div>
 </div>
 </div>
-<script src="/static/js/storage.js"></script>
-<script src="/static/js/app.js"></script>
-<script src="/static/js/session-summary.js"></script>
+<script src="/static/js/storage.js?v=20260824a"></script>
+<script src="/static/js/storage-customizations.js?v=20260824a"></script>
+<script src="/static/js/app.js?v=20260824a"></script>
+<script src="/static/js/session-summary.js?v=20260824a"></script>
+<script src="/static/js/customization-ui.js?v=20260824a"></script>
 </body>
 </html>
