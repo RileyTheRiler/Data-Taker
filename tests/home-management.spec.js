@@ -112,11 +112,14 @@ test("filters and sorts session history with separate Review and Objective actio
 test("renames, duplicates, reorders, archives, restores, and deletes goals through the UI", async ({ page }) => {
   await page.goto("/#goals");
   const firstDomain = page.locator(".domain-group").first();
-  await firstDomain.locator("summary").first().click();
+  await firstDomain.locator(":scope > summary .goal-node-label").click();
+  await expect(firstDomain).toHaveAttribute("open", "");
   const firstLtg = firstDomain.locator(".ltg-group").first();
-  await firstLtg.locator("summary").first().click();
+  await firstLtg.locator(":scope > summary .goal-node-label").click();
+  await expect(firstLtg).toHaveAttribute("open", "");
   const firstStg = firstLtg.locator(".stg-group").first();
-  await firstStg.locator("summary").first().click();
+  await firstStg.locator(":scope > summary .goal-node-label").click();
+  await expect(firstStg).toHaveAttribute("open", "");
   const row = firstStg.locator(".target-manager-list > .goal-node-row").first();
   const originalId = await page.evaluate(() =>
     DataTaker.getGoals().domains[0].long_term_goals[0].short_term_goals[0].targets[0].id
