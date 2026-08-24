@@ -16,10 +16,46 @@ module.exports = defineConfig({
   projects: [
     { name: "iPhone 13", use: { ...devices["iPhone 13"], browserName: "chromium" } },
     {
+      name: "iPhone 13 landscape",
+      use: {
+        ...devices["iPhone 13"],
+        browserName: "chromium",
+        viewport: { width: 844, height: 390 },
+        screen: { width: 844, height: 390 },
+      },
+    },
+    {
+      name: "iPad Pro 11 portrait",
+      use: {
+        ...devices["iPad Pro 11 landscape"],
+        browserName: "chromium",
+        viewport: { width: 834, height: 1194 },
+        screen: { width: 834, height: 1194 },
+      },
+    },
+    {
       name: "iPad Pro 11 landscape",
       use: { ...devices["iPad Pro 11 landscape"], browserName: "chromium" },
     },
     { name: "Mobile Safari", use: { ...devices["iPhone 13"], browserName: "webkit" } },
+    {
+      name: "Mobile Safari landscape",
+      use: {
+        ...devices["iPhone 13"],
+        browserName: "webkit",
+        viewport: { width: 844, height: 390 },
+        screen: { width: 844, height: 390 },
+      },
+    },
+    {
+      name: "iPad Safari portrait",
+      use: {
+        ...devices["iPad Pro 11 landscape"],
+        browserName: "webkit",
+        viewport: { width: 834, height: 1194 },
+        screen: { width: 834, height: 1194 },
+      },
+    },
     {
       name: "iPad Safari landscape",
       use: { ...devices["iPad Pro 11 landscape"], browserName: "webkit" },

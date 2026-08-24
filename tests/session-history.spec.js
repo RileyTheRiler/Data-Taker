@@ -45,6 +45,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("filters ended session history and shows target accuracy", async ({ page }) => {
+  await page.locator("#tab-sessions").click();
   await expect(page.locator("#past-session-count")).toHaveText("1 ended");
   const item = page.locator(".history-item");
   await expect(item).toHaveCount(1);
@@ -57,7 +58,7 @@ test("filters ended session history and shows target accuracy", async ({ page })
   await expect(item.locator(".history-targets li").nth(0)).toContainText("50% · 1/2 correct");
   await expect(item.locator(".history-targets li").nth(1)).toContainText("100% · 1/1 correct");
 
-  await page.locator("#client-select").selectOption("Client B");
+  await page.locator("#history-client-filter").selectOption("Client B");
   await expect(page.locator(".history-item")).toHaveCount(1);
   await expect(page.locator(".history-item")).toContainText("100% · 1/1 correct");
 
@@ -85,12 +86,14 @@ test("keeps a new session target label after the goal is deleted", async ({ page
     DataTaker.endSession(session.id);
   });
   await page.reload();
+  await page.locator("#tab-sessions").click();
   await expect(page.locator(".history-item")).toHaveCount(2);
   await page.locator(".history-item").first().locator("summary").click();
   await expect(page.locator(".history-item").first()).toContainText("Initial /r/ in CVC words");
 });
 
 test("adds and edits a custom cue used by the session screen", async ({ page }) => {
+  await page.locator("#tab-settings").click();
   await page.locator("#toggle-edit-cues").click();
   await page.locator("#new-cue-label").fill("Phonemic");
   await page.locator("#add-cue").click();
@@ -133,6 +136,7 @@ test("adds and renames a target during a session without losing its trial", asyn
 });
 
 test("reviews an ended session and exports the edited Objective draft", async ({ page }) => {
+  await page.locator("#tab-sessions").click();
   const item = page.locator(".history-item");
   await item.locator("summary").click();
   await expect(item.locator(".history-review-link")).toBeVisible();

@@ -82,7 +82,8 @@ test("supports zoom, large touch targets, and responsive tablet use", async ({ p
   expect(viewport).not.toContain("maximum-scale");
 
   await page.locator("#toggle-edit-goals").click();
-  const removeBox = await page.locator(".node-remove").first().boundingBox();
+  await page.locator("#goal-search").fill("Initial /r/ in CVC words");
+  const removeBox = await page.locator(".goal-action").filter({ hasText: /^Delete$/ }).first().boundingBox();
   const iconBox = await page.locator(".target-icon-button").first().boundingBox();
   expect(removeBox.width).toBeGreaterThanOrEqual(44);
   expect(removeBox.height).toBeGreaterThanOrEqual(44);

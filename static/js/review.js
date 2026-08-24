@@ -78,6 +78,11 @@ function renderReview(session) {
   document.getElementById("objective-draft").value = draft;
   syncPrintView();
   document.getElementById("review-main").classList.remove("hidden");
+  if (window.location.hash === "#objective") {
+    requestAnimationFrame(function () {
+      document.getElementById("objective-title").focus();
+    });
+  }
 }
 
 function showReviewError(message) {
