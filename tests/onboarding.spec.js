@@ -41,9 +41,11 @@ test("adds only the selected template, opens its editor, and keeps editing reach
   );
   await expect(page.locator(".domain-group").first()).toHaveAttribute("open", "");
   await expect(page.locator(".ltg-group").first()).toHaveAttribute("open", "");
-  await expect(page.locator(".stg-group").first()).toHaveAttribute("open", "");
-  await expect(page.locator(".stg-group").first().getByRole("button", { name: "Rename" })).toBeVisible();
-  await expect(page.locator(".stg-group").first().getByRole("button", { name: "Delete" })).toBeVisible();
+  const firstObjective = page.locator(".stg-group").first();
+  await expect(firstObjective).toHaveAttribute("open", "");
+  const firstObjectiveSummary = firstObjective.locator(":scope > summary");
+  await expect(firstObjectiveSummary.getByRole("button", { name: "Rename" })).toBeVisible();
+  await expect(firstObjectiveSummary.getByRole("button", { name: "Delete" })).toBeVisible();
 
   const library = await page.evaluate(() => DataTaker.getGoals());
   expect(library.domains).toHaveLength(1);
