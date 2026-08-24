@@ -17,12 +17,18 @@ android {
     }
 
     buildFeatures { buildConfig = true }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
 
     val generatedWebAssets = layout.buildDirectory.dir("generated/webAssets")
     sourceSets["main"].assets.srcDir(generatedWebAssets)
 
     testOptions { unitTests.isReturnDefaultValues = true }
 }
+
+kotlin { jvmToolchain(17) }
 
 val syncWebAssets by tasks.registering(Copy::class) {
     from(rootProject.projectDir.parentFile) {
