@@ -53,6 +53,67 @@
     }
   }
 
+  function expandCreatedGoalHierarchy(domainIds) {
+    const createdDomains = new Set(domainIds || []);
+    if (!createdDomains.size || typeof openGoalGroups === "undefined") { return; }
+    DataTaker.getGoals().domains.forEach(function (domain) {
+      if (!createdDomains.has(domain.id)) { return; }
+      openGoalGroups.add(domain.id);
+      domain.long_term_goals.forEach(function (ltg) {
+        openGoalGroups.add(ltg.id);
+        ltg.short_term_goals.forEach(function (stg) {
+          openGoalGroups.add(stg.id);
+        });
+      });
+    });
+  }
+
+  function openGoalEditor(domainIds, message) {
+    const search = id("goal-search");
+    if (search) { search.value = ""; }
+    expandCreatedGoalHierarchy(domainIds);
+    activateSection("goals", { focus: true });
+    renderGoalManager();
+    const status = id("goal-editor-discovery-status");
+    if (status) {
+      status.textContent = message ||
+        "Expand any goal to edit, archive, restore, duplicate, or permanently delete its contents.";
+    }
+  }
+
+  function installGoalEditDiscoverability() {
+    const managerCard = id("goal-editor-tree") && id("goal-editor-tree").closest(".card");
+    if (managerCard) {
+      const hint = managerCard.querySelector(":scope > .hint");
+      if (hint) {
+        hint.textContent =
+          "Template content is fully editable. Expand each level to rename or delete domains, long-term goals, short-term objectives, and targets. Completed-session snapshots stay unchanged.";
+      }
+      if (!id("goal-editor-discovery-status")) {
+        const status = document.createElement("p");
+        status.id = "goal-editor-discovery-status";
+        status.className = "inline-status";
+        status.setAttribute("role", "status");
+        status.setAttribute("aria-live", "polite");
+        if (hint) { hint.after(status); }
+        else { managerCard.prepend(status); }
+      }
+    }
+
+    const selectionHead = id("target-selection-card") && id("target-selection-card").querySelector(".card-head");
+    if (selectionHead && !id("edit-goals-from-start")) {
+      const edit = document.createElement("button");
+      edit.id = "edit-goals-from-start";
+      edit.type = "button";
+      edit.className = "btn-link";
+      edit.textContent = "Edit goals & objectives";
+      edit.addEventListener("click", function () {
+        openGoalEditor([], "Edit or remove any goal, objective, or target below.");
+      });
+      selectionHead.appendChild(edit);
+    }
+  }
+
   function renderTemplates() {
     const list = id("goal-template-list");
     list.innerHTML = "";
@@ -101,12 +162,10 @@
           refreshAll();
           refreshOnboarding();
           id("goal-template-dialog").close();
-          if (templateReturnSection === "start") {
-            activateSection("start", { focus: true });
-            id("target-search").focus();
-          } else {
-            renderGoalManager();
-          }
+          openGoalEditor(
+            created.domain_ids,
+            created.title + " added. Edit or delete any goal, objective, or target below, then return to Start when ready."
+          );
         } catch (error) {
           id("template-status").textContent = error.message;
           add.disabled = false;
@@ -213,6 +272,7 @@
   });
   id("reset-example-session").addEventListener("click", resetDemo);
 
+  installGoalEditDiscoverability();
   renderTemplates();
   refreshOnboarding();
   updateDemo();
