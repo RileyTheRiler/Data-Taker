@@ -52,7 +52,7 @@ test("offers a safe route back to every unfinished session", async ({ page }) =>
   await page.goto("/");
 
   await expect(page.locator("#active-session-card")).toBeVisible();
-  await expect(page.locator("#resume-session")).toHaveAttribute("href", "/session?id=" + sessionId);
+  await expect(page.locator("#resume-session")).toHaveAttribute("href", "/session.html?id=" + sessionId);
   await page.locator("#resume-session").click();
 
   page.once("dialog", (dialog) => dialog.accept());

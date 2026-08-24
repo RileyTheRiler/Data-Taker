@@ -54,7 +54,7 @@ function loadActiveSession() {
 
   if (!active.length) {
     card.classList.add("hidden");
-    link.href = "/session";
+    link.href = "/session.html";
     meta.textContent = "";
     return;
   }
@@ -70,7 +70,7 @@ function loadActiveSession() {
 
   meta.textContent = session.client_label + " · started " + started + " · " +
     session.datapoints.length + " trial" + (session.datapoints.length === 1 ? "" : "s") + additional;
-  link.href = "/session?id=" + encodeURIComponent(session.id);
+  link.href = "/session.html?id=" + encodeURIComponent(session.id);
   card.classList.remove("hidden");
 }
 
@@ -418,7 +418,7 @@ function startSession() {
 
   try {
     const session = DataTaker.startSession(clientLabel, Array.from(selectedTargets.keys()));
-    window.location.href = "/session?id=" + session.id;
+    window.location.href = "/session.html?id=" + session.id;
   } catch (e) {
     show("start-error", e.message);
   }
