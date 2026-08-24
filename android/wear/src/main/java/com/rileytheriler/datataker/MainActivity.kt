@@ -8,7 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -183,7 +182,6 @@ private fun DataTakerWatchScreen(
                         color = Color(0xFFB3261E),
                         size = buttonSize,
                         enabled = state.sessionId != null,
-                        foreground = foreground,
                         onClick = recordIncorrect,
                     )
                     TrialButton(
@@ -192,7 +190,6 @@ private fun DataTakerWatchScreen(
                         color = Color(0xFF137333),
                         size = buttonSize,
                         enabled = state.sessionId != null,
-                        foreground = foreground,
                         onClick = recordCorrect,
                     )
                 }
@@ -226,26 +223,32 @@ private fun TrialButton(
     color: Color,
     size: androidx.compose.ui.unit.Dp,
     enabled: Boolean,
-    foreground: Color,
     onClick: () -> Unit,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Button(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier
-                .size(size)
-                .clip(CircleShape)
-                .semantics {
-                    role = Role.Button
-                    contentDescription = "Record $label response"
-                },
-            colors = ButtonDefaults.buttonColors(containerColor = color),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(symbol, fontSize = 34.sp, fontWeight = FontWeight.Bold)
-            }
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .semantics {
+                role = Role.Button
+                contentDescription = "Record $label response"
+            },
+        colors = ButtonDefaults.buttonColors(
+            containerColor = color,
+            contentColor = Color.White,
+        ),
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(symbol, fontSize = 29.sp, lineHeight = 29.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = label,
+                maxLines = 1,
+                fontSize = 8.sp,
+                lineHeight = 9.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
-        Text(label, fontSize = 10.sp, color = foreground)
     }
 }
