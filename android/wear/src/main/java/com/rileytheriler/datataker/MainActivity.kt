@@ -134,7 +134,12 @@ private fun DataTakerWatchScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = safePadding, vertical = 8.dp),
+                    .padding(
+                        start = safePadding,
+                        top = 8.dp,
+                        end = safePadding,
+                        bottom = 12.dp,
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
