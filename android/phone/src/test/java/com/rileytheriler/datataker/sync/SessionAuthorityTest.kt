@@ -86,6 +86,45 @@ class SessionAuthorityTest {
         assertEquals("operation-1", state.getString("last_accepted_operation_id"))
         assertFalse(state.toString().contains("Client A"))
         assertEquals(1, state.getJSONObject("session").getInt("total"))
+        assertEquals(
+            "Long target label",
+            state.getJSONObject("session").getJSONArray("targets").getJSONObject(0).getString("label"),
+        )
+    }
+
+    @Test
+    fun emptyAuthorityPublishesNoActiveSession() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("data_taker_authority", Context.MODE_PRIVATE).edit().clear().commit()
+
+        val state = SessionAuthority(context).watchState()
+
+        assertTrue(state.isNull("session"))
+        assertEquals("connected", state.getString("status"))
+    }
+
+    @Test
+    fun multipleTargetsPreserveActiveTargetAndAggregateAccuracy() {
+        val session = baseSession()
+            .put("target_ids", JSONArray().put("target-1").put("target-2"))
+            .put("active_target_id", "target-2")
+            .put(
+                "target_snapshots",
+                JSONObject()
+                    .put("target-1", JSONObject().put("id", "target-1").put("label", "First target"))
+                    .put("target-2", JSONObject().put("id", "target-2").put("label", "Second target")),
+            )
+        authority.initialize(JSONObject().put("session", session).toString())
+        authority.applyOperation(trial("operation-1", "+").toString())
+        authority.applyOperation(trial("operation-2", "-").put("target_id", "target-2").toString())
+
+        val state = authority.watchState().getJSONObject("session")
+
+        assertEquals("target-2", state.getString("active_target_id"))
+        assertEquals(2, state.getJSONArray("targets").length())
+        assertEquals(1, state.getInt("correct"))
+        assertEquals(2, state.getInt("total"))
+        assertEquals(50, state.getInt("percent"))
     }
 
     private fun baseSession() = JSONObject()
