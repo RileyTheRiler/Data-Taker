@@ -883,6 +883,35 @@ textarea:focus-visible,
   font-weight: 800;
 }
 
+.session-notes {
+  padding: 16px 14px 24px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-subtle);
+}
+.session-notes-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.session-notes-head h2 { margin: 0; font-size: 16px; }
+.session-notes-hint { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+.notes-status {
+  flex: none;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+.notes-status.error { color: var(--red); font-weight: 700; }
+.notes-input {
+  min-height: 110px;
+  resize: vertical;
+  /* Textareas don't inherit the body font the way buttons are made to. */
+  font-family: inherit;
+  line-height: 1.45;
+}
+
 .ended-banner {
   width: min(920px, calc(100% - 32px));
   margin: 16px auto;
@@ -891,7 +920,13 @@ textarea:focus-visible,
 .ended-banner > h1 { margin: 0 0 8px; font-size: 24px; }
 
 @media (max-width: 799px) and (min-height: 461px) {
-  .session-workspace { padding-bottom: 252px; }
+  /* The notes section now sits below the workspace, so it is the element that
+     has to clear the fixed action dock. */
+  .session-workspace { padding-bottom: 16px; }
+  .session-workspace:not(.hidden) ~ .session-notes { padding-bottom: 268px; }
+  /* Tapping the field scrolls it into view; leave room for the fixed dock so it
+     doesn't land underneath. */
+  .session-workspace:not(.hidden) ~ .session-notes .notes-input { scroll-margin-bottom: 268px; }
   .action-dock {
     position: fixed;
     right: 0;
@@ -929,6 +964,7 @@ textarea:focus-visible,
   .cues { padding: 18px 20px 12px; }
   .dashboard { padding: 20px; }
   .accuracy-num { font-size: 52px; }
+  .session-notes { padding: 20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

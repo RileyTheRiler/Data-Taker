@@ -163,6 +163,19 @@
       </section>
     </aside>
   </main>
+
+  <section class="session-notes" aria-labelledby="session-notes-title">
+    <div class="session-notes-head">
+      <div>
+        <h2 id="session-notes-title">Session notes</h2>
+        <p class="session-notes-hint">Jot observations as you go — saved automatically.</p>
+      </div>
+      <span id="notes-status" class="notes-status" role="status" aria-live="polite">Saved</span>
+    </div>
+    <textarea id="session-notes" class="field notes-input" maxlength="10000"
+              aria-labelledby="session-notes-title"
+              placeholder="Observations, context, next steps&hellip;"></textarea>
+  </section>
 </div>
 </div>
 <script src="/static/js/storage.js?v=20260824e"></script>
