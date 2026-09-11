@@ -308,3 +308,40 @@ button { font-family: inherit; cursor: pointer; }
 }
 .ended-banner p { margin: 6px 0; }
 .ended-banner .btn-primary { margin-top: 12px; text-decoration: none; display: block; text-align: center; }
+
+/* Session notes */
+.notes { padding: 0 14px 24px; }
+.notes-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 8px;
+}
+.notes-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.notes-status { font-size: 12px; color: var(--muted); }
+.notes-status.saving { color: var(--muted); }
+.notes-status.error { color: var(--red); font-weight: 600; }
+.notes-input {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.45;
+  color: inherit;
+}
+.notes-input:focus {
+  outline: none;
+  border-color: var(--teal, #0f766e);
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
+}

@@ -8,6 +8,11 @@ let activeIndex = 0;       // which target is showing in the carousel
 let armedCues = new Set(); // cueing levels armed for the next tap(s)
 let timerHandle = null;
 
+// Notes autosave bookkeeping.
+let notesSaved = "";        // last text known to be persisted
+let notesTimer = null;      // pending debounced save
+let notesInFlight = false;  // a save request is running
+
 async function jsonFetch(url, options) {
   const res = await fetch(url, options);
   let body = null;
@@ -133,6 +138,78 @@ function renderRecent() {
   });
 }
 
+// ---------- Session notes ----------
+
+const notesInput = document.getElementById("session-notes");
+const notesStatus = document.getElementById("notes-status");
+
+const NOTES_DEBOUNCE_MS = 800;
+
+function setNotesStatus(text, cls) {
+  notesStatus.textContent = text;
+  notesStatus.className = "notes-status" + (cls ? " " + cls : "");
+}
+
+function renderNotes() {
+  // Never stomp on text the clinician is in the middle of typing: the server
+  // view arrives on every tap, and the field is always on screen.
+  if (document.activeElement === notesInput || notesInput.value !== notesSaved) {
+    return;
+  }
+  notesInput.value = state.notes || "";
+  notesSaved = notesInput.value;
+}
+
+async function saveNotes() {
+  if (notesTimer) { clearTimeout(notesTimer); notesTimer = null; }
+  const text = notesInput.value;
+  if (notesInFlight || text === notesSaved) { return; }
+
+  notesInFlight = true;
+  setNotesStatus("Saving…", "saving");
+  try {
+    await jsonFetch("/api/sessions/" + sessionId + "/notes", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: text }),
+    });
+    notesSaved = text;
+    if (state) { state.notes = text; }
+    setNotesStatus(notesInput.value === notesSaved ? "Saved" : "Unsaved changes");
+  } catch (e) {
+    setNotesStatus("Not saved — retrying", "error");
+    scheduleNotesSave(3000);
+  } finally {
+    notesInFlight = false;
+    // Text typed while the request was in flight still needs saving.
+    if (notesInput.value !== notesSaved) { scheduleNotesSave(); }
+  }
+}
+
+function scheduleNotesSave(delay) {
+  if (notesTimer) { clearTimeout(notesTimer); }
+  notesTimer = setTimeout(saveNotes, delay === undefined ? NOTES_DEBOUNCE_MS : delay);
+}
+
+notesInput.addEventListener("input", function () {
+  setNotesStatus(notesInput.value === notesSaved ? "Saved" : "Unsaved changes");
+  scheduleNotesSave();
+});
+notesInput.addEventListener("blur", saveNotes);
+
+// Best-effort flush if the page is closed or backgrounded mid-edit.
+window.addEventListener("pagehide", function () {
+  if (notesInput.value === notesSaved) { return; }
+  try {
+    fetch("/api/sessions/" + sessionId + "/notes", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: notesInput.value }),
+      keepalive: true,
+    });
+  } catch (e) { /* nothing more we can do here */ }
+});
+
 // ---------- Rendering glue ----------
 
 function renderAll() {
@@ -140,6 +217,7 @@ function renderAll() {
   renderCarousel();
   renderDashboard();
   renderRecent();
+  renderNotes();
   tickTimer();
 
   if (state.end_time) {
@@ -190,6 +268,7 @@ async function deleteDatapoint(dpId) {
 
 async function endSession() {
   if (!confirm("End this session? You won't be able to add more data.")) { return; }
+  await saveNotes();
   try {
     const updated = await jsonFetch(
       "/api/sessions/" + sessionId + "/end",

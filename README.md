@@ -22,6 +22,9 @@ logging.
 - **SLP cueing toggles** — Max, Mod, Min, Visual, Verbal, Tactile (replacing ABA
   prompt vocabulary). Arm cues before a tap; they attach to the recorded trial and
   persist for fast repeated entries.
+- **Session notes** — a free-text notes field is always on the session screen;
+  it autosaves as you type and stays editable after the session ends, for the
+  post-session write-up.
 - **Real-time dashboard** — running % accuracy for the active target and overall,
   plus a scrolling **last-5** trial log with one-tap **undo** for error correction.
 - **Activity log** — a lightweight ledger (`data/activity_log.json`) recording
@@ -72,7 +75,8 @@ the large touch targets.
    session, then **Start Session**.
 2. **Session:** the timer runs automatically. Arm cueing chips, then tap **+** or
    **−**. Swipe the carousel (or use the arrows) to switch targets. Watch the live
-   accuracy and the last-5 log; tap **×** to undo a mis-tap.
+   accuracy and the last-5 log; tap **×** to undo a mis-tap. Jot anything you
+   need in **Session notes** — it saves itself a moment after you stop typing.
 3. **End** the session to see the total duration for hour logging.
 
 ## API
@@ -84,6 +88,7 @@ the large touch targets.
 | `POST /api/sessions` | Start a session (`client_label`, `target_ids`) |
 | `GET /api/sessions/<id>` | Session data + computed accuracy |
 | `POST /api/sessions/<id>/end` | End session, return duration |
+| `PUT /api/sessions/<id>/notes` | Save the session's free-text notes (`notes`) |
 | `POST /api/sessions/<id>/datapoints` | Record a trial (`target_id`, `result`, `prompt_levels`) |
 | `DELETE /api/sessions/<id>/datapoints/<dp_id>` | Undo / error-correct a trial |
 

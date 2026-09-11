@@ -17,6 +17,10 @@ app = Flask(__name__)
 # Valid SLP cueing / prompting levels (replaces the ABA prompt vocabulary).
 PROMPT_LEVELS = {"Max", "Mod", "Min", "Visual", "Verbal", "Tactile"}
 
+# Upper bound on free-text session notes, so a runaway client can't bloat the
+# JSON store. Generous enough for a full page of clinical observations.
+NOTES_MAX_LENGTH = 10000
+
 
 def _now():
     return datetime.now(timezone.utc).isoformat()
@@ -82,6 +86,7 @@ def _session_view(session):
 
     return {
         **session,
+        "notes": session.get("notes", ""),
         "targets": [per_target[tid] for tid in session.get("target_ids", [])],
         "overall": {
             "correct": overall_correct,
@@ -161,6 +166,7 @@ def api_start_session():
         "target_ids": target_ids,
         "start_time": _now(),
         "end_time": None,
+        "notes": "",
         "datapoints": [],
     }
     sessions = storage.get_sessions()
@@ -188,6 +194,34 @@ def api_end_session(session_id):
         session["end_time"] = _now()
         storage.save_sessions(sessions)
         storage.append_activity("modify", "session", session_id)
+    return jsonify(_session_view(session))
+
+
+@app.route("/api/sessions/<session_id>/notes", methods=["PUT"])
+def api_save_notes(session_id):
+    """Save the session's free-text notes.
+
+    Notes stay editable after a session ends — clinicians typically write up
+    observations once the trial-by-trial entry is done.
+    """
+    sessions = storage.get_sessions()
+    session = _find_session(sessions, session_id)
+    if session is None:
+        abort(404)
+
+    data = request.get_json(silent=True) or {}
+    notes = data.get("notes")
+    if not isinstance(notes, str):
+        return jsonify({"error": "Notes must be text."}), 400
+    if len(notes) > NOTES_MAX_LENGTH:
+        return jsonify(
+            {"error": "Notes are limited to %d characters." % NOTES_MAX_LENGTH}
+        ), 400
+
+    if session.get("notes", "") != notes:
+        session["notes"] = notes
+        storage.save_sessions(sessions)
+        storage.append_activity("modify", "session_notes", session_id)
     return jsonify(_session_view(session))
 
 
