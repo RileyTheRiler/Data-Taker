@@ -20,7 +20,7 @@ function loadDataTaker(seed = {}) {
   const crypto = { randomUUID: () => "00000000-0000-0000-0000-" + String(++nextId).padStart(12, "0") };
   const context = vm.createContext({ console, crypto, localStorage, window: { crypto } });
   vm.runInContext(storageSource + "; globalThis.__dataTaker = DataTaker;", context);
-  return { DataTaker: context.__dataTaker, values };
+  return { DataTaker: context.__dataTaker, values, context };
 }
 
 test("migrates v1 sessions to v2 without removing the recovery copy", () => {
@@ -429,4 +429,108 @@ test("rejects malformed imports before replacing current data", () => {
   assert.throws(() => DataTaker.importAll({ sessions: {} }), /sessions/);
   assert.equal(JSON.stringify(DataTaker.exportAll()).replace(/"exported_at":"[^"]+"/, '"exported_at":"x"'),
     before.replace(/"exported_at":"[^"]+"/, '"exported_at":"x"'));
+});
+
+test("saves session notes, keeps them through trials, and survives a reload", () => {
+  const { DataTaker } = loadDataTaker();
+  DataTaker.addClient("Client A");
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  assert.equal(session.notes, "");
+
+  const saved = DataTaker.saveSessionNotes(session.id, "Hoarse quality; try easy onset.");
+  assert.equal(saved.notes, "Hoarse quality; try easy onset.");
+
+  DataTaker.addDatapoint(session.id, "tgt-r-cvc", "+", []);
+  assert.equal(DataTaker.getSession(session.id).notes, "Hoarse quality; try easy onset.");
+
+  // Notes live in the stored session, so a backup round-trip carries them.
+  const exported = JSON.parse(JSON.stringify(DataTaker.exportAll()));
+  const reloaded = loadDataTaker().DataTaker;
+  reloaded.importAll(exported);
+  assert.equal(reloaded.getSession(session.id).notes, "Hoarse quality; try easy onset.");
+});
+
+test("keeps session notes editable after the session ends", () => {
+  const { DataTaker } = loadDataTaker();
+  DataTaker.addClient("Client A");
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  DataTaker.endSession(session.id);
+
+  const saved = DataTaker.saveSessionNotes(session.id, "Wrote the Objective after the session.");
+  assert.equal(saved.notes, "Wrote the Objective after the session.");
+  assert.equal(DataTaker.getSession(session.id).notes, "Wrote the Objective after the session.");
+
+  // Trial data stays locked even though notes are not.
+  assert.throws(() => DataTaker.addDatapoint(session.id, "tgt-r-cvc", "+", []), /ended/);
+});
+
+test("rejects notes that are not text or exceed the length cap", () => {
+  const { DataTaker } = loadDataTaker();
+  DataTaker.addClient("Client A");
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+
+  assert.throws(() => DataTaker.saveSessionNotes(session.id, 42), /text/);
+  assert.throws(() => DataTaker.saveSessionNotes(session.id, "x".repeat(10001)), /10000/);
+  assert.throws(() => DataTaker.saveSessionNotes("missing-session", "hi"), /not found/);
+
+  assert.equal(DataTaker.saveSessionNotes(session.id, "x".repeat(10000)).notes.length, 10000);
+});
+
+test("only logs a notes activity entry when the text actually changed", () => {
+  const { DataTaker, values } = loadDataTaker();
+  DataTaker.addClient("Client A");
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+
+  const noteEntries = () => JSON.parse(values.get("dataTaker.activityLog.v1") || "[]")
+    .filter((entry) => entry.entity === "session_notes").length;
+
+  DataTaker.saveSessionNotes(session.id, "First pass.");
+  assert.equal(noteEntries(), 1);
+  DataTaker.saveSessionNotes(session.id, "First pass.");
+  assert.equal(noteEntries(), 1);
+  DataTaker.saveSessionNotes(session.id, "Second pass.");
+  assert.equal(noteEntries(), 2);
+});
+
+test("keeps locally typed notes when the native authority replays a session", () => {
+  const { DataTaker, context } = loadDataTaker();
+  DataTaker.addClient("Client A");
+  const session = DataTaker.startSession("Client A", ["tgt-r-cvc"]);
+  DataTaker.saveSessionNotes(session.id, "Typed on the phone's web view.");
+
+  // The phone authority snapshots the session at start and knows nothing about
+  // notes, so it answers a trial with its own copy, which carries no notes key.
+  const authoritative = JSON.parse(JSON.stringify(DataTaker.getSessions()[0]));
+  delete authoritative.notes;
+  authoritative.datapoints.push({
+    id: "watch-1",
+    operation_id: "op-1",
+    target_id: "tgt-r-cvc",
+    result: "+",
+    prompt_levels: [],
+    timestamp: "2026-09-11T17:00:00.000Z",
+    source: "watch",
+  });
+  context.window.DataTakerNative = {
+    applyOperation: () => JSON.stringify({
+      accepted: true,
+      duplicate: false,
+      session: authoritative,
+    }),
+  };
+
+  const result = DataTaker.applySessionOperation({
+    id: "op-1",
+    session_id: session.id,
+    type: "trial",
+    datapoint_id: "watch-1",
+    target_id: "tgt-r-cvc",
+    result: "+",
+    prompt_levels: [],
+    source: "watch",
+  });
+
+  assert.equal(result.session.datapoints.length, 1);
+  assert.equal(result.session.notes, "Typed on the phone's web view.");
+  assert.equal(DataTaker.getSession(session.id).notes, "Typed on the phone's web view.");
 });

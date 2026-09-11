@@ -44,6 +44,9 @@ logging.
   be added during an active session, and the current target label can be edited
   without detaching any recorded trials. Unfinished sessions remain recoverable
   from the home screen, including the active target and armed cue state.
+- **Session notes** — a free-text notes field is always on the session screen.
+  It autosaves as you type, is stored with the session (so it travels in
+  backups), and stays editable after the session ends for the write-up.
 - **Session history** — ended sessions are listed by anonymized client with
   client filtering, newest/oldest sorting, search, duration, total trials,
   overall accuracy, expandable per-target results, and direct Review/Objective
@@ -147,7 +150,8 @@ Home Screen** to install it as a full-screen app (per `manifest.json`).
    **Goals**, and **Settings**.
 2. **Session:** the timer runs automatically. Arm cueing chips, then tap **+** or
    **−**. Swipe the carousel (or use the arrows) to switch targets. Watch the live
-   accuracy and the last-5 log; tap **×** to undo a mis-tap.
+   accuracy and the last-5 log; tap **×** to undo a mis-tap. Jot anything you
+   need in **Session notes** — it saves itself a moment after you stop typing.
 3. **End** the session to see its summary, open target progress, or edit and
    export an Objective draft from the review screen.
 
@@ -158,7 +162,7 @@ Home Screen** to install it as a full-screen app (per `manifest.json`).
 | `dataTaker.goals.v1` | The goal hierarchy (domains → LTGs → STGs → targets) |
 | `dataTaker.clients.v1` | Anonymized client labels |
 | `dataTaker.cues.v1` | Editable cue type labels |
-| `dataTaker.sessions.v2` | Sessions + embedded datapoints + target metadata snapshots |
+| `dataTaker.sessions.v2` | Sessions + embedded datapoints + target metadata snapshots + notes |
 | `dataTaker.activityLog.v1` | Action ledger |
 | `dataTaker.recentTargetSets.v1` | Recent stable target-ID sets by anonymized client label |
 | `dataTaker.preferences.v1` | Supported accessibility preferences |

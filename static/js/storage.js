@@ -24,6 +24,10 @@ const DataTaker = (function () {
   const APPEARANCE_MODES = ["system", "light", "dark"];
   const COLOR_THEMES = ["teal", "ocean", "violet", "rose"];
 
+  // Upper bound on free-text session notes, so one runaway session can't fill
+  // the localStorage quota. Generous enough for a page of clinical observations.
+  const NOTES_MAX_LENGTH = 10000;
+
   function uid() {
     if (window.crypto && crypto.randomUUID) { return crypto.randomUUID().replace(/-/g, ""); }
     return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
@@ -588,7 +592,7 @@ const DataTaker = (function () {
       );
     }
 
-    return { ...session, targets, overall, duration_seconds };
+    return { ...session, notes: session.notes || "", targets, overall, duration_seconds };
   }
 
   function getPastSessions(clientLabel) {
@@ -851,6 +855,7 @@ const DataTaker = (function () {
       target_snapshots: targetSnapshots,
       start_time: now(),
       end_time: null,
+      notes: "",
       datapoints: [],
     };
     const sessions = getSessions();
@@ -902,7 +907,16 @@ const DataTaker = (function () {
     const sessions = getSessions();
     const index = sessions.findIndex((session) => session.id === authoritativeSession.id);
     if (index < 0) { sessions.push(authoritativeSession); }
-    else { sessions[index] = authoritativeSession; }
+    else {
+      // The phone/watch authority owns trial data, not notes: it snapshots the
+      // session at start and never edits notes, so a trial round-trip would
+      // otherwise replay stale (usually empty) notes over what was typed since.
+      const localNotes = sessions[index].notes;
+      sessions[index] = authoritativeSession;
+      if (localNotes !== undefined && authoritativeSession.notes === undefined) {
+        sessions[index].notes = localNotes;
+      }
+    }
     saveSessions(sessions);
     return sessionView(authoritativeSession);
   }
@@ -1053,6 +1067,26 @@ const DataTaker = (function () {
     session.target_snapshots[targetId] = { ...existing, label: label };
     saveSessions(sessions);
     appendActivity("modify", target ? "target" : "session_target", targetId);
+    return sessionView(session);
+  }
+
+  function saveSessionNotes(id, notes) {
+    if (typeof notes !== "string") { throw new Error("Notes must be text."); }
+    if (notes.length > NOTES_MAX_LENGTH) {
+      throw new Error("Notes are limited to " + NOTES_MAX_LENGTH + " characters.");
+    }
+
+    const sessions = getSessions();
+    const session = findSession(sessions, id);
+    if (!session) { throw new Error("Session not found."); }
+
+    // Notes stay editable after a session ends: the write-up usually happens
+    // once trial entry is done.
+    if ((session.notes || "") !== notes) {
+      session.notes = notes;
+      saveSessions(sessions);
+      appendActivity("modify", "session_notes", id);
+    }
     return sessionView(session);
   }
 
@@ -1222,6 +1256,7 @@ const DataTaker = (function () {
     getRepeatLastSession, getRecentTargetSets,
     getSessionUi, saveSessionUi, clearSessionUi,
     addSessionTarget, renameSessionTarget, addDatapoint, deleteDatapoint,
+    saveSessionNotes,
     applySessionOperation, reconcileNativeSession,
     getPreferences, savePreferences, getLastBackupDate, markBackupSuccessful,
     validateImport, exportAll, importAll,

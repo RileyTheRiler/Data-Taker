@@ -8,6 +8,8 @@ let armedCues = new Set();
 let timerHandle = null;
 let feedbackHandle = null;
 let lastDatapointId = null;
+let notesSaved = "";        // last text known to be persisted
+let notesTimer = null;      // pending debounced save
 
 const SUPPORT_LEVELS = new Set(["max", "maximum", "mod", "moderate", "min", "minimal"]);
 
@@ -282,12 +284,55 @@ function renderRecent() {
   });
 }
 
+// ---------- Session notes ----------
+
+const NOTES_DEBOUNCE_MS = 600;
+
+function notesInput() { return document.getElementById("session-notes"); }
+
+function setNotesStatus(text, isError) {
+  const status = document.getElementById("notes-status");
+  status.textContent = text;
+  status.classList.toggle("error", Boolean(isError));
+}
+
+function renderNotes() {
+  const input = notesInput();
+  // Never stomp on text being typed: renderAll runs on every trial tap, and
+  // the notes field is always on screen.
+  if (document.activeElement === input || input.value !== notesSaved) { return; }
+  input.value = state.notes || "";
+  notesSaved = input.value;
+}
+
+function saveNotes() {
+  if (notesTimer) { clearTimeout(notesTimer); notesTimer = null; }
+  const text = notesInput().value;
+  if (text === notesSaved) { return; }
+  try {
+    const updated = DataTaker.saveSessionNotes(sessionId, text);
+    notesSaved = text;
+    if (state) { state.notes = updated.notes; }
+    setNotesStatus(notesInput().value === notesSaved ? "Saved" : "Unsaved changes", false);
+  } catch (error) {
+    // Most likely a full or unavailable localStorage; keep the text on screen
+    // and say so rather than silently dropping it.
+    setNotesStatus("Not saved — " + error.message, true);
+  }
+}
+
+function scheduleNotesSave() {
+  if (notesTimer) { clearTimeout(notesTimer); }
+  notesTimer = setTimeout(saveNotes, NOTES_DEBOUNCE_MS);
+}
+
 function renderAll() {
   document.getElementById("client-label").textContent = state.client_label;
   renderCarousel();
   renderDashboard();
   renderTargetManager();
   renderRecent();
+  renderNotes();
   tickTimer();
   if (state.end_time) { showEnded(); }
 }
@@ -452,6 +497,7 @@ function deleteDatapoint(datapointId) {
 }
 
 function exitSession() {
+  saveNotes();
   if (state && !state.end_time) {
     const leave = confirm("Leave this screen? The session will keep running and can be resumed from the home screen.");
     if (!leave) { return; }
@@ -462,6 +508,7 @@ function exitSession() {
 
 function endSession() {
   if (!confirm("End this session? You won't be able to add more data.")) { return; }
+  saveNotes();
   try {
     applyState(DataTaker.endSession(sessionId));
   } catch (error) {
@@ -520,6 +567,11 @@ document.getElementById("edit-target-label").addEventListener("keydown", functio
   if (event.key === "Enter") { saveTargetLabel(); }
 });
 document.getElementById("add-session-target").addEventListener("click", addTargetToSession);
+document.getElementById("session-notes").addEventListener("input", function () {
+  setNotesStatus(notesInput().value === notesSaved ? "Saved" : "Unsaved changes", false);
+  scheduleNotesSave();
+});
+document.getElementById("session-notes").addEventListener("blur", saveNotes);
 
 (function () {
   const track = document.getElementById("carousel-track");
@@ -535,7 +587,10 @@ document.getElementById("add-session-target").addEventListener("click", addTarge
   }, { passive: true });
 })();
 
-window.addEventListener("pagehide", persistSessionUi);
+window.addEventListener("pagehide", function () {
+  saveNotes();
+  persistSessionUi();
+});
 
 window.DataTakerWatchSync = function () {
   if (!sessionId || !state || state.end_time ||
