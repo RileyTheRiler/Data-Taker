@@ -1,0 +1,11 @@
+{
+  "name": "data-taker",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/storage.test.js && playwright test",
+    "test:storage": "node --test tests/storage.test.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}

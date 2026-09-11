@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Data Taker">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/static/icons/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<title>Data Taker — Session Review</title>
+<script src="/static/js/appearance.js?v=20260824e"></script>
+<link rel="stylesheet" href="/static/css/style.css?v=20260824e">
+<link rel="stylesheet" href="/static/css/session-summary.css?v=20260824e">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824e">
+</head>
+<body>
+<div class="app review-app">
+  <header class="topbar no-print">
+    <a class="exit review-back" href="/">&#8592; Past sessions</a>
+    <h1>Session review</h1>
+    <p class="subtitle">Review recorded data and prepare an Objective draft</p>
+  </header>
+
+  <main id="review-main" class="review-main hidden">
+    <section class="card review-summary-card" aria-labelledby="review-summary-title">
+      <h2 id="review-summary-title">Session summary</h2>
+      <p id="review-meta" class="review-meta"></p>
+      <div class="review-metrics">
+        <div class="review-metric"><strong id="review-duration">—</strong><span>Duration</span></div>
+        <div class="review-metric"><strong id="review-accuracy">—</strong><span>Overall accuracy</span></div>
+      </div>
+      <ul id="review-targets" class="review-targets"></ul>
+    </section>
+
+    <section class="card review-progress-card session-summary-panel hidden" data-session-summary aria-labelledby="review-progress-title">
+      <h2 id="review-progress-title">Performance graphs</h2>
+      <div class="summary-metrics">
+        <div class="summary-metric"><strong data-summary-client>—</strong><span>Client</span></div>
+        <div class="summary-metric"><strong data-summary-duration>—</strong><span>Duration</span></div>
+        <div class="summary-metric"><strong data-summary-overall>—</strong><span>Overall accuracy</span></div>
+        <div class="summary-metric"><strong data-summary-trials>0</strong><span>Total trials</span></div>
+      </div>
+
+      <div class="summary-section">
+        <h3 class="summary-subheading">Target performance this session</h3>
+        <div data-summary-target-chart></div>
+      </div>
+
+      <div class="summary-section">
+        <h3 class="summary-subheading">Client progress over time</h3>
+        <p class="hint"><span data-summary-session-count>0</span> ended sessions for this client. Overall accuracy is graphed by session.</p>
+        <div data-summary-progress-chart></div>
+      </div>
+
+      <div class="summary-section">
+        <h3 class="summary-subheading">Current target trends</h3>
+        <div class="target-trends" data-summary-target-trends></div>
+      </div>
+    </section>
+
+    <section id="objective" class="card objective-card" aria-labelledby="objective-title">
+      <h2 id="objective-title" tabindex="-1">Objective draft</h2>
+      <p class="objective-warning">
+        Generated only from recorded trials, accuracy, duration, and cue labels. Add the activity,
+        skilled intervention, client response, and any other required context. Verify every detail
+        before using it. Do not enter identifying information in this practice tool.
+      </p>
+      <label class="field-label" for="objective-draft">Edit before exporting</label>
+      <textarea id="objective-draft" class="objective-text" spellcheck="true"></textarea>
+      <div class="objective-actions no-print">
+        <button id="download-objective" class="btn-primary" type="button">Download text</button>
+        <button id="print-objective" class="btn-secondary" type="button">Print / Save PDF</button>
+      </div>
+      <p id="objective-status" class="objective-status" role="status"></p>
+      <div class="print-only" aria-hidden="true">
+        <h1 class="objective-print-title">Objective draft</h1>
+        <p id="objective-print-date" class="objective-print-date"></p>
+        <div id="objective-print-body" class="objective-print-body"></div>
+      </div>
+    </section>
+  </main>
+
+  <main id="review-error" class="review-main hidden">
+    <section class="card">
+      <h2>Session unavailable</h2>
+      <p id="review-error-message" class="hint"></p>
+      <a class="btn-primary" href="/">Back to Past sessions</a>
+    </section>
+  </main>
+</div>
+<script src="/static/js/storage.js?v=20260824e"></script>
+<script src="/static/js/storage-customizations.js?v=20260824e"></script>
+<script src="/static/js/review.js?v=20260824e"></script>
+<script src="/static/js/session-summary.js?v=20260824e"></script>
+<script src="/static/js/customization-ui.js?v=20260824e"></script>
+</body>
+</html>

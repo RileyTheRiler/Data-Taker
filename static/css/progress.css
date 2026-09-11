@@ -1,0 +1,79 @@
+.progress-app { max-width: 820px; }
+.progress-back {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.progress-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+}
+.progress-controls h2,
+#progress-result h2,
+#progress-empty h2 { margin: 0; font-size: 20px; }
+.progress-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.progress-filters label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.progress-filters .field { margin-top: 4px; }
+.progress-path {
+  margin: 6px 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.progress-metrics { margin-bottom: 14px; }
+.progress-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.progress-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.progress-table th,
+.progress-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  white-space: nowrap;
+}
+.progress-table th:first-child,
+.progress-table td:first-child { text-align: left; }
+.progress-table tbody tr:last-child td { border-bottom: 0; }
+.progress-table th { color: var(--muted); font-size: 11px; }
+.progress-review-link { color: var(--teal-dark); font-weight: 700; }
+.progress-start-link { display: inline-flex; width: auto; margin-top: 12px; padding: 0 16px; }
+.visually-hidden-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (min-width: 700px) {
+  .progress-main { padding: 22px; }
+}
+
+@media (max-width: 520px) {
+  .progress-filters { grid-template-columns: 1fr; }
+  .progress-table th,
+  .progress-table td { padding: 9px 7px; }
+}

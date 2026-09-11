@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Data Taker">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/static/icons/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<title>Data Taker</title>
+<script src="/static/js/appearance.js?v=20260824e"></script>
+<link rel="stylesheet" href="/static/css/style.css?v=20260824e">
+<link rel="stylesheet" href="/static/css/customization.css?v=20260824e">
+<link rel="stylesheet" href="/static/css/onboarding.css?v=20260824g">
+</head>
+<body>
+<div class="app setup-app">
+  <header class="topbar">
+    <h1>Data Taker</h1>
+    <p class="subtitle">SLP trial-by-trial data collection · practice tool</p>
+  </header>
+
+  <nav class="home-tabs" role="tablist" aria-label="Data Taker sections">
+    <button id="tab-start" class="home-tab" type="button" role="tab" aria-controls="panel-start" data-section="start">
+      <span aria-hidden="true">▶</span><span>Start</span>
+    </button>
+    <button id="tab-sessions" class="home-tab" type="button" role="tab" aria-controls="panel-sessions" data-section="sessions">
+      <span aria-hidden="true">◷</span><span>Sessions</span>
+    </button>
+    <button id="toggle-edit-goals" class="home-tab" type="button" role="tab" aria-controls="panel-goals" data-section="goals">
+      <span aria-hidden="true">◎</span><span>Goals</span>
+    </button>
+    <button id="tab-settings" class="home-tab" type="button" role="tab" aria-controls="panel-settings" data-section="settings">
+      <span aria-hidden="true">⚙</span><span>Settings</span>
+    </button>
+  </nav>
+
+  <main class="setup">
+    <section id="panel-start" class="home-panel" role="tabpanel" aria-labelledby="tab-start" data-panel="start">
+      <h2 class="panel-title" tabindex="-1">Start</h2>
+
+      <section id="active-session-card" class="card active-session-card hidden" aria-labelledby="active-session-title">
+        <div class="active-session-copy">
+          <p class="eyebrow">Session in progress</p>
+          <h3 id="active-session-title">Resume your active session</h3>
+          <p id="active-session-meta" class="hint"></p>
+        </div>
+        <a id="resume-session" class="btn-primary active-session-link" href="/session.html">Resume</a>
+      </section>
+
+      <section id="goal-onboarding-card" class="card goal-onboarding-card hidden" aria-labelledby="goal-onboarding-title">
+        <p class="eyebrow">Set up your goal library</p>
+        <h3 id="goal-onboarding-title">Start with only what you need</h3>
+        <p class="hint">Add an editable starter template, build one goal yourself, or practice with an example that is never saved.</p>
+        <div class="onboarding-actions">
+          <button class="btn-primary" type="button" data-open-templates>Choose a starter template</button>
+          <button class="btn-secondary" type="button" data-create-custom-goal>Create my own goal</button>
+          <button id="open-example-session" class="onboarding-tertiary" type="button">Try an example session</button>
+        </div>
+      </section>
+
+      <section id="client-card" class="card" aria-labelledby="client-title">
+        <h3 id="client-title">Client</h3>
+        <p class="hint">Use an anonymized label only. Never enter a name or identifying information.</p>
+        <label class="field-label" for="client-select">Client label</label>
+        <select id="client-select" class="field"></select>
+        <a id="selected-client-progress" class="contextual-progress-link" href="/progress.html">View target progress</a>
+        <div class="inline-add">
+          <input id="new-client" class="field" type="text" placeholder="New label, e.g. Client C" autocomplete="off">
+          <button id="add-client" class="btn-secondary" type="button">Add</button>
+        </div>
+        <p id="client-error" class="error" role="alert"></p>
+      </section>
+
+      <section id="repeat-session-card" class="card compact-card hidden" aria-labelledby="repeat-title">
+        <div class="card-head">
+          <div>
+            <h3 id="repeat-title">Repeat last session</h3>
+            <p id="repeat-session-meta" class="hint"></p>
+          </div>
+          <button id="repeat-last-session" class="btn-secondary" type="button">Select targets</button>
+        </div>
+        <p id="repeat-session-status" class="inline-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="recent-sets-card" class="card compact-card hidden" aria-labelledby="recent-sets-title">
+        <h3 id="recent-sets-title">Recent target sets</h3>
+        <div id="recent-target-sets" class="recent-sets"></div>
+      </section>
+
+      <section id="target-selection-card" class="card" aria-labelledby="target-selection-title">
+        <div class="card-head">
+          <div>
+            <h3 id="target-selection-title">Choose targets</h3>
+            <p id="available-target-count" class="hint"></p>
+          </div>
+          <span id="selected-target-count" class="selection-count" aria-live="polite">0 selected</span>
+        </div>
+        <label class="field-label" for="target-search">Search targets or goal paths</label>
+        <input id="target-search" class="field" type="search" placeholder="Search targets" autocomplete="off">
+        <div id="goal-tree" class="goal-tree selection-tree"></div>
+        <button id="toggle-all-targets" class="btn-secondary target-list-toggle hidden" type="button" aria-expanded="false">Show more targets</button>
+
+        <div class="selected-tray-head">
+          <h4>Selected targets</h4>
+          <button id="clear-targets" class="btn-link" type="button">Clear all</button>
+        </div>
+        <div id="selected-target-tray" class="selected-target-tray" aria-live="polite"></div>
+      </section>
+
+      <section id="session-start-card" class="card start-card">
+        <p id="selection-summary" class="hint">No targets selected yet.</p>
+        <button id="start-session" class="btn-primary" type="button" disabled>Start Session</button>
+        <p id="start-error" class="error" role="alert"></p>
+      </section>
+    </section>
+
+    <section id="panel-sessions" class="home-panel hidden" role="tabpanel" aria-labelledby="tab-sessions" data-panel="sessions">
+      <h2 class="panel-title" tabindex="-1">Sessions</h2>
+      <section class="card history-card" aria-labelledby="history-title">
+        <div class="card-head">
+          <h3 id="history-title">Past sessions</h3>
+          <div class="history-head-actions">
+            <span id="past-session-count" class="history-count"></span>
+            <a id="client-progress-link" class="contextual-progress-link" href="/progress.html">Target progress</a>
+          </div>
+        </div>
+        <div class="history-filters">
+          <label>Client
+            <select id="history-client-filter" class="field"></select>
+          </label>
+          <label>Sort
+            <select id="history-sort" class="field">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+          <label class="history-search-label">Search
+            <input id="history-search" class="field" type="search" placeholder="Date or target" autocomplete="off">
+          </label>
+        </div>
+        <div id="past-sessions" class="session-history" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <section id="panel-goals" class="home-panel hidden" role="tabpanel" aria-labelledby="toggle-edit-goals" data-panel="goals">
+      <h2 class="panel-title" tabindex="-1">Goals</h2>
+      <section class="card" aria-labelledby="goal-manager-title">
+        <div class="goal-library-actions">
+          <h3 id="goal-manager-title">Goal library</h3>
+          <button class="btn-secondary" type="button" data-open-templates>Browse templates</button>
+        </div>
+        <p class="hint">Rename, organize, archive, or restore items without changing stable IDs or completed-session snapshots.</p>
+        <p id="goal-empty-note" class="goal-empty-note hidden">Your library is empty. Choose a template or add a domain below.</p>
+        <label class="field-label" for="goal-search">Search labels and paths</label>
+        <input id="goal-search" class="field" type="search" placeholder="Search goals" autocomplete="off">
+        <form id="add-domain-form" class="inline-add">
+          <input id="new-domain-name" class="field" type="text" placeholder="New domain" autocomplete="off">
+          <button id="add-domain" class="btn-secondary" type="submit">Add domain</button>
+        </form>
+        <p id="goal-editor-error" class="error" role="alert"></p>
+        <div id="goal-editor-tree" class="goal-manager-tree"></div>
+      </section>
+    </section>
+
+    <section id="panel-settings" class="home-panel hidden" role="tabpanel" aria-labelledby="tab-settings" data-panel="settings">
+      <h2 class="panel-title" tabindex="-1">Settings</h2>
+
+      <section class="card warning-card" aria-labelledby="practice-warning-title">
+        <h3 id="practice-warning-title">Practice tool — no PHI</h3>
+        <p>This browser-local app is for educational practice. Use anonymized labels only. Do not enter names, dates of birth, medical record numbers, or other identifying information.</p>
+      </section>
+
+      <section class="card cue-manager-card">
+        <div class="card-head">
+          <h3>Cue management</h3>
+          <button id="toggle-edit-cues" class="btn-link" type="button" aria-expanded="false">Manage cues</button>
+        </div>
+        <p id="cue-summary" class="hint"></p>
+        <div id="cue-editor" class="cue-editor hidden">
+          <p class="hint">Changes apply to future trials. Recorded cue labels remain unchanged.</p>
+          <div class="cue-template-actions">
+            <button id="restore-starter-cues" class="btn-secondary" type="button">Restore starter cues</button>
+          </div>
+          <div id="cue-editor-list" class="cue-editor-list"></div>
+          <div class="inline-add cue-add-row">
+            <input id="new-cue-label" class="field" type="text" maxlength="40" placeholder="New cue type" autocomplete="off">
+            <button id="add-cue" class="btn-secondary" type="button">Add</button>
+          </div>
+          <p id="cue-editor-error" class="error" role="alert"></p>
+        </div>
+      </section>
+
+      <section class="card appearance-card" aria-labelledby="appearance-title">
+        <h3 id="appearance-title">Appearance</h3>
+        <fieldset class="appearance-fieldset">
+          <legend>Mode</legend>
+          <div class="mode-options">
+            <label class="appearance-option">
+              <input type="radio" name="appearance-mode" value="system">
+              <span><strong>System</strong><small>Follow this device</small></span>
+            </label>
+            <label class="appearance-option">
+              <input type="radio" name="appearance-mode" value="light">
+              <span><strong>Light</strong><small>Always light</small></span>
+            </label>
+            <label class="appearance-option">
+              <input type="radio" name="appearance-mode" value="dark">
+              <span><strong>Dark</strong><small>Always dark</small></span>
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="appearance-fieldset color-template-fieldset">
+          <legend>Color template</legend>
+          <p class="hint">Choose the accent color used for navigation, links, charts, and selected controls.</p>
+          <div class="color-template-options">
+            <label class="color-template-option">
+              <input type="radio" name="color-theme" value="teal">
+              <span class="color-template-preview"><span class="color-swatch color-swatch-teal" aria-hidden="true"></span><strong>Calm Teal</strong></span>
+            </label>
+            <label class="color-template-option">
+              <input type="radio" name="color-theme" value="ocean">
+              <span class="color-template-preview"><span class="color-swatch color-swatch-ocean" aria-hidden="true"></span><strong>Ocean Blue</strong></span>
+            </label>
+            <label class="color-template-option">
+              <input type="radio" name="color-theme" value="violet">
+              <span class="color-template-preview"><span class="color-swatch color-swatch-violet" aria-hidden="true"></span><strong>Soft Violet</strong></span>
+            </label>
+            <label class="color-template-option">
+              <input type="radio" name="color-theme" value="rose">
+              <span class="color-template-preview"><span class="color-swatch color-swatch-rose" aria-hidden="true"></span><strong>Warm Rose</strong></span>
+            </label>
+          </div>
+        </fieldset>
+        <p id="appearance-status" class="inline-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="card" aria-labelledby="accessibility-title">
+        <h3 id="accessibility-title">Accessibility</h3>
+        <label class="preference-row">
+          <span><strong>High contrast</strong><small>Increase borders and text contrast.</small></span>
+          <input id="pref-high-contrast" type="checkbox">
+        </label>
+        <label class="preference-row">
+          <span><strong>Reduce motion</strong><small>Disable nonessential movement.</small></span>
+          <input id="pref-reduce-motion" type="checkbox">
+        </label>
+      </section>
+
+      <section class="card backup-card" aria-labelledby="backup-title">
+        <h3 id="backup-title">Backup and restore</h3>
+        <p class="hint">Everything stays in this browser. Import replaces the current goals, clients, cues, sessions, and supported preferences.</p>
+        <div class="editor-row">
+          <button id="export-data" class="btn-secondary" type="button">Export backup</button>
+          <label class="btn-secondary file-btn">
+            Choose backup to import
+            <input id="import-data" class="visually-hidden-input" type="file" accept="application/json">
+          </label>
+        </div>
+        <p id="last-backup-date" class="hint"></p>
+        <p id="backup-status" class="inline-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="card">
+        <h3>Storage</h3>
+        <p class="hint">Data is stored in this browser's localStorage. Clearing site data or using another browser/device removes access unless you exported a backup.</p>
+      </section>
+    </section>
+  </main>
+</div>
+
+<dialog id="goal-template-dialog" class="app-dialog template-dialog" aria-labelledby="goal-template-title">
+  <form method="dialog">
+    <div class="template-dialog-header">
+      <h2 id="goal-template-title">Choose a starter template</h2>
+      <p class="hint">Add only the area you need. Every goal and target can be renamed, reorganized, archived, or deleted.</p>
+    </div>
+    <p class="template-guidance">Templates are examples, not treatment plans. Confirm the wording, conditions, criteria, and clinical fit before use.</p>
+    <div id="goal-template-list" class="goal-template-list"></div>
+    <p id="template-status" class="inline-status template-status" role="status" aria-live="polite"></p>
+    <div class="dialog-actions">
+      <button class="btn-secondary" value="cancel">Close</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="example-session-dialog" class="app-dialog example-dialog" aria-labelledby="example-session-title">
+  <form method="dialog">
+    <h2 id="example-session-title">Example session</h2>
+    <p class="hint">Practice the trial workflow below. Nothing in this example is saved to clients, sessions, history, or progress.</p>
+
+    <section class="demo-step" aria-labelledby="demo-target-title">
+      <h3 id="demo-target-title">1. Current target</h3>
+      <div class="demo-target">
+        <strong>🗣️ Initial /r/ in words</strong>
+        <span>Articulation › Word level</span>
+      </div>
+    </section>
+
+    <section class="demo-step" aria-labelledby="demo-cue-title">
+      <h3 id="demo-cue-title">2. Select any cues used</h3>
+      <div class="demo-cues">
+        <button class="demo-cue" type="button" data-demo-cue="Visual" aria-pressed="false">Visual</button>
+        <button class="demo-cue" type="button" data-demo-cue="Verbal" aria-pressed="false">Verbal</button>
+        <button class="demo-cue" type="button" data-demo-cue="Model" aria-pressed="false">Model</button>
+      </div>
+    </section>
+
+    <section class="demo-step" aria-labelledby="demo-result-title">
+      <h3 id="demo-result-title">3. Record the response</h3>
+      <div class="demo-result-actions">
+        <button class="demo-result demo-result-correct" type="button" data-demo-result="+" aria-label="Record correct">+</button>
+        <button class="demo-result demo-result-incorrect" type="button" data-demo-result="-" aria-label="Record incorrect">−</button>
+      </div>
+    </section>
+
+    <section class="demo-step" aria-labelledby="demo-summary-title">
+      <h3 id="demo-summary-title">4. Review the running summary</h3>
+      <div class="demo-summary-head">
+        <strong id="demo-accuracy">0%</strong>
+        <span id="demo-trial-count">0 trials</span>
+      </div>
+      <div class="demo-chart" role="img" aria-label="Correct and incorrect practice trials">
+        <span id="demo-correct-bar" class="demo-chart-correct"></span>
+        <span id="demo-incorrect-bar" class="demo-chart-incorrect"></span>
+      </div>
+      <ul id="demo-recent" class="demo-recent"></ul>
+      <p class="demo-note">A real ended session includes per-target summaries and progress links.</p>
+    </section>
+
+    <div class="dialog-actions">
+      <button id="reset-example-session" class="btn-secondary" type="button">Reset</button>
+      <button class="btn-primary dialog-confirm" value="done">Done</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="confirm-dialog" class="app-dialog" aria-labelledby="confirm-dialog-title">
+  <form method="dialog">
+    <h2 id="confirm-dialog-title">Confirm action</h2>
+    <p id="confirm-dialog-message"></p>
+    <div class="dialog-actions">
+      <button id="confirm-dialog-cancel" class="btn-secondary" value="cancel">Cancel</button>
+      <button id="confirm-dialog-accept" class="btn-primary dialog-confirm" value="confirm">Confirm</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="icon-dialog" class="app-dialog" aria-labelledby="icon-dialog-title">
+  <form method="dialog">
+    <h2 id="icon-dialog-title">Choose target icon</h2>
+    <p id="icon-dialog-target" class="hint"></p>
+    <div id="icon-options" class="icon-options" role="group" aria-label="Suggested icons"></div>
+    <label class="field-label" for="custom-icon">Custom emoji or short icon</label>
+    <input id="custom-icon" class="field" type="text" maxlength="16" autocomplete="off">
+    <div class="dialog-actions">
+      <button class="btn-secondary" value="cancel">Cancel</button>
+      <button id="use-auto-icon" class="btn-secondary" type="button">Use automatic</button>
+      <button id="save-icon" class="btn-primary dialog-confirm" type="button">Apply</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/static/js/storage.js?v=20260824e"></script>
+<script src="/static/js/goal-templates.js?v=20260824e"></script>
+<script src="/static/js/storage-customizations.js?v=20260824e"></script>
+<script src="/static/js/setup.js?v=20260824e"></script>
+<script src="/static/js/customization-ui.js?v=20260824e"></script>
+<script src="/static/js/onboarding.js?v=20260824g"></script>
+</body>
+</html>
